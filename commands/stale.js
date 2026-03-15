@@ -1,14 +1,17 @@
-const React = require('react');
-const { render } = require('ink');
 const { ensureConfig } = require('../lib/conf');
 const { getRepositoryContext } = require('../lib/git');
-const StaleScreen = require('../tui/screens/StaleScreen');
+const shellCommand = require('./shell');
 
 async function staleCommand(options) {
   const config = await ensureConfig();
   const repo = await getRepositoryContext();
-  const app = render(React.createElement(StaleScreen, { config, repo, days: options && options.days }));
-  await app.waitUntilExit();
+  await shellCommand.renderShell({
+    config,
+    repo,
+    initialCommand: `/stale ${options && options.days ? options.days : 7}`,
+    autoExit: true,
+    showWelcome: false
+  });
 }
 
 module.exports = staleCommand;

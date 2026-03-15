@@ -1,14 +1,17 @@
-const React = require('react');
-const { render } = require('ink');
 const { ensureConfig } = require('../lib/conf');
 const { getRepositoryContext } = require('../lib/git');
-const StatsScreen = require('../tui/screens/StatsScreen');
+const shellCommand = require('./shell');
 
 async function statsCommand() {
   const config = await ensureConfig();
   const repo = await getRepositoryContext();
-  const app = render(React.createElement(StatsScreen, { config, repo }));
-  await app.waitUntilExit();
+  await shellCommand.renderShell({
+    config,
+    repo,
+    initialCommand: '/stats',
+    autoExit: true,
+    showWelcome: false
+  });
 }
 
 module.exports = statsCommand;

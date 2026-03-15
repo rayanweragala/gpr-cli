@@ -1,19 +1,15 @@
-const React = require('react');
-const { render } = require('ink');
-const { readConfig } = require('../lib/conf');
-const ConfigScreen = require('../tui/screens/ConfigScreen');
+const shellCommand = require('./shell');
 
 async function configCommand() {
-  let existing = null;
-
-  try {
-    existing = await readConfig();
-  } catch (_error) {
-    existing = null;
-  }
-
-  const app = render(React.createElement(ConfigScreen, { existing }));
-  await app.waitUntilExit();
+  const config = await shellCommand.tryReadConfig();
+  const repo = await shellCommand.tryGetRepo();
+  await shellCommand.renderShell({
+    config,
+    repo,
+    initialCommand: '/config',
+    autoExit: true,
+    showWelcome: false
+  });
 }
 
 module.exports = configCommand;

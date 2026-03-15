@@ -1,14 +1,17 @@
-const React = require('react');
-const { render } = require('ink');
 const { ensureConfig } = require('../lib/conf');
 const { getRepositoryContext } = require('../lib/git');
-const StatusScreen = require('../tui/screens/StatusScreen');
+const shellCommand = require('./shell');
 
 async function statusCommand() {
   const config = await ensureConfig();
   const repo = await getRepositoryContext();
-  const app = render(React.createElement(StatusScreen, { config, repo }));
-  await app.waitUntilExit();
+  await shellCommand.renderShell({
+    config,
+    repo,
+    initialCommand: '/status',
+    autoExit: true,
+    showWelcome: false
+  });
 }
 
 module.exports = statusCommand;

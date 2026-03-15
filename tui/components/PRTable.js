@@ -2,151 +2,74 @@ const React = require('react');
 const { Box, Text } = require('ink');
 const { format } = require('timeago.js');
 
-const COLUMN_WIDTHS = {
-  number: 5,
-  title: 28,
-  author: 16,
-  branch: 22,
-  base: 16,
-  created: 13,
-  url: 28
-};
-
 function PRTable(props) {
   const pullRequests = Array.isArray(props.pullRequests) ? props.pullRequests : [];
 
   if (!pullRequests.length) {
-    return React.createElement(Text, { color: '#F9FAFB' }, 'No open pull requests found.');
+    return React.createElement(Text, { color: '#F59E0B' }, 'No open pull requests found.');
   }
 
-  const widths = getResponsiveWidths();
-  const showAuthor = props.showAuthor !== false;
-  const showUrl = props.showUrl !== false && widths.showUrl;
+  const cols = getColumns();
+  const showAuthor = props.showAuthor !== false && cols.author > 0;
+  const showUrl = props.showUrl !== false && cols.url > 0;
 
   return React.createElement(
     Box,
     { flexDirection: 'column' },
-    React.createElement(HeaderRow, { widths, showAuthor, showUrl, showIdle: Boolean(props.showIdle) }),
-    ...pullRequests.map((pullRequest, index) => React.createElement(DataRow, {
-      key: pullRequest.number,
-      pullRequest,
-      owner: props.owner,
-      repo: props.repo,
-      widths,
-      showAuthor,
-      showUrl,
-      showIdle: Boolean(props.showIdle),
-      selected: index === (props.selectedIndex || 0)
-    }))
-  );
-}
-
-function HeaderRow(props) {
-  return React.createElement(
-    Box,
-    {
-      borderBottom: true,
-      borderColor: '#7C3AED',
-      marginTop: 0,
-      marginBottom: 0,
-      paddingY: 0
-    },
-    React.createElement(Cell, { width: props.widths.number, color: '#7C3AED', bold: true }, '#'),
-    React.createElement(Cell, { width: props.widths.title, color: '#7C3AED', bold: true }, 'Title'),
-    props.showAuthor ? React.createElement(Cell, { width: props.widths.author, color: '#7C3AED', bold: true }, 'Author') : null,
-    React.createElement(Cell, { width: props.widths.branch, color: '#7C3AED', bold: true }, 'Branch'),
-    React.createElement(Cell, { width: props.widths.base, color: '#7C3AED', bold: true }, 'Base'),
-    React.createElement(Cell, { width: props.widths.created, color: '#7C3AED', bold: true }, props.showIdle ? 'Idle' : 'Created'),
-    props.showUrl ? React.createElement(Cell, { width: props.widths.url, color: '#7C3AED', bold: true }, 'URL') : null
-  );
-}
-
-function DataRow(props) {
-  const textColor = props.selected ? '#FFFFFF' : undefined;
-  const backgroundColor = props.selected ? '#7C3AED' : undefined;
-  const createdValue = props.showIdle ? format(props.pullRequest.updated_at) : format(props.pullRequest.created_at);
-  const createdColor = props.selected ? '#FFFFFF' : props.showIdle ? '#EF4444' : getAgeColor(props.pullRequest.created_at);
-
-  return React.createElement(
-    Box,
-    {
-      backgroundColor,
-      marginTop: 0,
-      marginBottom: 0,
-      paddingY: 0
-    },
-    React.createElement(Cell, { width: props.widths.number, color: textColor || '#F9FAFB' }, truncate(String(props.pullRequest.number), props.widths.number)),
-    React.createElement(Cell, { width: props.widths.title, color: textColor || '#F9FAFB' }, truncate(props.pullRequest.title, props.widths.title)),
-    props.showAuthor ? React.createElement(
-      Cell,
-      { width: props.widths.author, color: textColor || '#6B7280' },
-      truncate(props.pullRequest.user ? props.pullRequest.user.login : 'unknown', props.widths.author)
-    ) : null,
     React.createElement(
-      Cell,
-      { width: props.widths.branch, color: textColor || '#3B82F6' },
-      truncate(props.pullRequest.head ? props.pullRequest.head.ref : '', props.widths.branch)
+      Box,
+      null,
+      cell('#', cols.num, '#7C3AED', true),
+      cell('Title', cols.title, '#7C3AED', true),
+      showAuthor ? cell('Author', cols.author, '#7C3AED', true) : null,
+      cell('Branch', cols.branch, '#7C3AED', true),
+      cell('Base', cols.base, '#7C3AED', true),
+      cell(props.showIdle ? 'Idle' : 'Age', cols.created, '#7C3AED', true),
+      showUrl ? cell('URL', cols.url, '#7C3AED', true) : null
     ),
-    React.createElement(
-      Cell,
-      { width: props.widths.base, color: textColor || '#F9FAFB' },
-      truncate(props.pullRequest.base ? props.pullRequest.base.ref : '', props.widths.base)
-    ),
-    React.createElement(
-      Cell,
-      { width: props.widths.created, color: createdColor },
-      truncate(createdValue, props.widths.created)
-    ),
-    props.showUrl ? React.createElement(
-      Cell,
-      { width: props.widths.url, color: textColor || '#3B82F6' },
-      truncate(`/${props.owner}/${props.repo}/pull/${props.pullRequest.number}`, props.widths.url)
-    ) : null
+    React.createElement(Text, { color: '#374151' }, '─'.repeat(Math.max(20, totalWidth(cols, showAuthor, showUrl)))),
+    ...pullRequests.map((pullRequest) => React.createElement(
+      Box,
+      { key: pullRequest.number },
+      cell(String(pullRequest.number), cols.num, '#22D3EE', true),
+      cell(truncate(props.showIdle ? pullRequest.title : pullRequest.title, cols.title), cols.title, '#F9FAFB'),
+      showAuthor ? cell(truncate(pullRequest.user ? pullRequest.user.login : 'unknown', cols.author), cols.author, '#6B7280') : null,
+      cell(truncate(pullRequest.head ? pullRequest.head.ref : '', cols.branch), cols.branch, '#3B82F6'),
+      cell(truncate(pullRequest.base ? pullRequest.base.ref : '', cols.base), cols.base, '#10B981'),
+      cell(
+        truncate(format(props.showIdle ? pullRequest.updated_at : pullRequest.created_at), cols.created),
+        cols.created,
+        props.showIdle ? '#EF4444' : getAgeColor(props.showIdle ? pullRequest.updated_at : pullRequest.created_at)
+      ),
+      showUrl ? cell(truncate(`/${props.owner}/${props.repo}/pull/${pullRequest.number}`, cols.url), cols.url, '#22D3EE') : null
+    ))
   );
 }
 
-function Cell(props) {
-  return React.createElement(
-    Box,
-    {
-      width: props.width,
-      overflow: 'hidden',
-      marginTop: 0,
-      marginBottom: 0,
-      paddingY: 0
-    },
-    React.createElement(Text, { color: props.color, bold: Boolean(props.bold) }, pad(props.children, props.width))
-  );
-}
+function getColumns() {
+  const tw = process.stdout.columns || 120;
 
-function getResponsiveWidths() {
-  const termWidth = process.stdout.columns || 120;
-
-  if (termWidth < 100) {
-    return {
-      ...COLUMN_WIDTHS,
-      title: 22,
-      branch: 18,
-      base: 14,
-      showUrl: false
-    };
+  if (tw >= 140) {
+    return { num: 5, title: 30, author: 16, branch: 24, base: 18, created: 13, url: 26 };
   }
 
-  if (termWidth < 140) {
-    return {
-      ...COLUMN_WIDTHS,
-      title: 26,
-      branch: 20,
-      base: 14,
-      url: 20,
-      showUrl: true
-    };
+  if (tw >= 100) {
+    return { num: 5, title: 26, author: 14, branch: 20, base: 16, created: 13, url: 0 };
   }
 
-  return {
-    ...COLUMN_WIDTHS,
-    showUrl: true
-  };
+  return { num: 4, title: 22, author: 0, branch: 18, base: 14, created: 12, url: 0 };
+}
+
+function totalWidth(cols, showAuthor, showUrl) {
+  return cols.num + cols.title + cols.branch + cols.base + cols.created + (showAuthor ? cols.author : 0) + (showUrl ? cols.url : 0);
+}
+
+function cell(value, width, color, bold) {
+  return React.createElement(
+    Box,
+    { width, overflow: 'hidden' },
+    React.createElement(Text, { color, bold: Boolean(bold) }, pad(value, width))
+  );
 }
 
 function truncate(value, len) {

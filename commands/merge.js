@@ -1,14 +1,17 @@
-const React = require('react');
-const { render } = require('ink');
 const { ensureConfig } = require('../lib/conf');
 const { getRepositoryContext } = require('../lib/git');
-const MergeScreen = require('../tui/screens/MergeScreen');
+const shellCommand = require('./shell');
 
 async function mergeCommand(prNumber) {
   const config = await ensureConfig();
   const repo = await getRepositoryContext();
-  const app = render(React.createElement(MergeScreen, { config, repo, prNumber }));
-  await app.waitUntilExit();
+  await shellCommand.renderShell({
+    config,
+    repo,
+    initialCommand: prNumber ? `/merge ${prNumber}` : '/merge',
+    autoExit: true,
+    showWelcome: false
+  });
 }
 
 module.exports = mergeCommand;

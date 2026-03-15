@@ -2,8 +2,7 @@
 
 const { Command } = require('commander');
 const chalk = require('chalk');
-const React = require('react');
-const { render } = require('ink');
+const shellCommand = require('./commands/shell');
 const openCommand = require('./commands/open');
 const listCommand = require('./commands/list');
 const statusCommand = require('./commands/status');
@@ -16,7 +15,6 @@ const mineCommand = require('./commands/mine');
 const watchCommand = require('./commands/watch');
 const staleCommand = require('./commands/stale');
 const statsCommand = require('./commands/stats');
-const AppShell = require('./tui/AppShell');
 
 const program = new Command();
 
@@ -90,8 +88,7 @@ main();
 
 async function main() {
   if (process.argv.slice(2).length === 0) {
-    const app = render(React.createElement(AppShell));
-    await app.waitUntilExit();
+    await shellCommand();
     return;
   }
 

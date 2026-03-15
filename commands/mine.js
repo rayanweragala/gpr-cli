@@ -1,12 +1,16 @@
-const React = require('react');
-const { render } = require('ink');
 const { ensureConfig } = require('../lib/conf');
-const MineScreen = require('../tui/screens/MineScreen');
+const shellCommand = require('./shell');
 
 async function mineCommand() {
   const config = await ensureConfig();
-  const app = render(React.createElement(MineScreen, { config }));
-  await app.waitUntilExit();
+  const repo = await shellCommand.tryGetRepo();
+  await shellCommand.renderShell({
+    config,
+    repo,
+    initialCommand: '/mine',
+    autoExit: true,
+    showWelcome: false
+  });
 }
 
 module.exports = mineCommand;
