@@ -154,7 +154,11 @@ function App(props) {
       return;
     }
 
-    const trimmed = String(value || '').trim();
+    const typed = String(value || '').trim();
+    const selectedSuggestion = suggestions[Math.max(0, Math.min(suggestIndex, Math.max(0, suggestions.length - 1)))];
+    const trimmed = shouldRunSuggestion(typed, showSuggest, selectedSuggestion)
+      ? selectedSuggestion.cmd
+      : typed;
 
     if (!trimmed) {
       return;
@@ -335,3 +339,15 @@ async function runCommand(rawInput, context) {
 }
 
 module.exports = App;
+
+function shouldRunSuggestion(value, visible, suggestion) {
+  if (!visible || !suggestion) {
+    return false;
+  }
+
+  if (!value.startsWith('/')) {
+    return false;
+  }
+
+  return !value.slice(1).includes(' ');
+}

@@ -46,6 +46,18 @@ async function assignCommand(args, context) {
       members = await getOrgMembers(api, repo.owner);
     }
 
+    if (!pullRequests.length) {
+      push(React.createElement(Text, { color: '#F59E0B' }, 'No open pull requests found.'));
+      setMode('idle');
+      return;
+    }
+
+    if (!members.length) {
+      push(React.createElement(Text, { color: '#F59E0B' }, 'No team members found for assignment.'));
+      setMode('idle');
+      return;
+    }
+
     setMode('form');
     setActiveForm(React.createElement(AssignForm, {
       pullRequests,
@@ -54,9 +66,15 @@ async function assignCommand(args, context) {
         setActiveForm(null);
         setMode('loading');
         try {
+          const assigned = [...new Set([...(reviewers || []), ...(assignees || [])])];
+
+          if (!assigned.length) {
+            push(React.createElement(Text, { color: '#F59E0B' }, `No reviewers or assignees selected for PR #${prNumber}.`));
+            return;
+          }
+
           await requestReviewers(api, repo.owner, repo.repo, prNumber, reviewers);
           await addAssignees(api, repo.owner, repo.repo, prNumber, assignees);
-          const assigned = [...new Set([...(reviewers || []), ...(assignees || [])])];
           push(React.createElement(
             Text,
             { color: '#10B981' },
@@ -117,7 +135,7 @@ function AssignForm(props) {
     title: 'Select reviewers / assignees',
     items: props.members,
     selected: reviewers,
-    hint: 'Space toggle  Enter confirm  Esc cancel',
+    hint: 'Select at least one person',
     onToggle: (login) => {
       setReviewers((items) => items.includes(login) ? items.filter((item) => item !== login) : [...items, login]);
     },
@@ -146,6 +164,9 @@ function MultiSelect(props) {
       }
     }
     if (key.return) {
+      if (!props.selected.length) {
+        return;
+      }
       props.onConfirm(props.selected);
     }
     if (key.escape && typeof props.onCancel === 'function') {
@@ -169,8 +190,18 @@ function MultiSelect(props) {
     React.createElement(
       Box,
       { marginTop: 1 },
-      React.createElement(Text, { color: '#6B7280' }, props.hint || 'Space toggle  Enter confirm  Esc cancel')
-    )
+      React.createElement(
+        Text,
+        { color: '#6B7280' },
+        React.createElement(Text, { color: '#F59E0B' }, 'Space'),
+        ' toggle  ',
+        React.createElement(Text, { color: '#F59E0B' }, 'Enter'),
+        ' confirm  ',
+        React.createElement(Text, { color: '#F59E0B' }, 'Esc'),
+        ' cancel'
+      )
+    ),
+    props.hint ? React.createElement(Text, { color: '#6B7280' }, props.hint) : null
   );
 }
 
