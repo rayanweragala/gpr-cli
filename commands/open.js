@@ -10,26 +10,13 @@ const {
   formatApiError
 } = require('../lib/api');
 const {
-  getRepositoryContext,
-  ensureBranchIsPushed
+  getRepositoryContext
 } = require('../lib/git');
 
 async function openCommand() {
   const config = await ensureConfig();
   const repo = await getRepositoryContext();
-  await ensureBranchIsPushed(repo.branch);
-
   const api = buildApi(config);
-  const existingPullRequest = await safeApiCall(() =>
-    findPullRequestByBranch(api, repo.owner, repo.repo, repo.branch)
-  );
-
-  if (existingPullRequest) {
-    console.log(chalk.yellow('Warning: A PR already exists for this branch:'));
-    console.log(`→  ${chalk.cyan.underline(existingPullRequest.html_url)}`);
-    return;
-  }
-
   const branches = await safeApiCall(() => listBranches(api, repo.owner, repo.repo));
 
   if (!branches.length) {
@@ -37,6 +24,20 @@ async function openCommand() {
   }
 
   const branchNames = branches.map((branch) => branch.name);
+
+  if (!branchNames.includes(repo.branch)) {
+    throw handledError(`Push your branch first: git push origin ${repo.branch}`);
+  }
+
+  const existingPullRequest = await safeApiCall(() =>
+    findPullRequestByBranch(api, repo.owner, repo.repo, repo.branch)
+  );
+
+  if (existingPullRequest) {
+    console.log(chalk.yellow('⚠ A PR already exists for this branch:'));
+    console.log(`→  ${chalk.cyan.underline(existingPullRequest.html_url)}`);
+    return;
+  }
   const defaultBaseBranch = branchNames.includes('main')
     ? 'main'
     : branchNames.includes('master')
@@ -44,7 +45,7 @@ async function openCommand() {
       : branchNames[0];
 
   if (!branchNames.includes('main')) {
-    console.log(chalk.yellow(`Warning: base branch "main" not found. Available branches: ${branchNames.join(', ')}`));
+    console.log(chalk.yellow(`⚠ Base branch "main" not found. Available branches: ${branchNames.join(', ')}`));
   }
 
   const answers = await inquirer.prompt([
@@ -100,12 +101,11 @@ function printSuccess(branch, base, pullRequest) {
   const green = chalk.green;
 
   console.log(green('╔══════════════════════════════════════════════╗'));
-  console.log(green('║           Pull Request Created!              ║'));
+  console.log(green('║       ✔  Pull Request Created!               ║'));
   console.log(green('╚══════════════════════════════════════════════╝'));
-  console.log(`  Title   : ${pullRequest.title}`);
-  console.log(`  From    : ${chalk.blue(branch)}  →  ${chalk.blue(base)}`);
-  console.log(`  Author  : ${pullRequest.user && pullRequest.user.login ? pullRequest.user.login : 'unknown'}`);
-  console.log(`  URL     : ${chalk.cyan.underline(pullRequest.html_url)}`);
+  console.log(`  Title  : ${pullRequest.title}`);
+  console.log(`  From   : ${chalk.blue(branch)} → ${chalk.blue(base)}`);
+  console.log(`  URL    : ${chalk.cyan.underline(pullRequest.html_url)}`);
 }
 
 function toTitle(branchName) {

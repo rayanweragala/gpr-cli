@@ -8,6 +8,12 @@ async function statusCommand() {
   const repo = await getRepositoryContext();
   const api = buildApi(config);
 
+  console.log(chalk.white('┌─────────────────────────────────────────┐'));
+  console.log(chalk.white('│  GPR Status                             │'));
+  console.log(chalk.white('└─────────────────────────────────────────┘'));
+  console.log(`Repo    : ${repo.owner}/${repo.repo}`);
+  console.log(`Branch  : ${chalk.blue(repo.branch)}`);
+
   let pullRequest;
 
   try {
@@ -16,17 +22,12 @@ async function statusCommand() {
     throw formatApiError(error);
   }
 
-  console.log(`Repo    : ${repo.owner}/${repo.repo}`);
-  console.log(`Branch  : ${chalk.blue(repo.branch)}`);
-
   if (!pullRequest) {
-    console.log('Status  : No PR found for this branch');
+    console.log(`PR      : ${chalk.yellow('✖ No PR found for this branch')}`);
     return;
   }
 
-  console.log(`Status  : ${chalk.green('Open')}`);
-  console.log(`PR      : #${pullRequest.number} ${pullRequest.title}`);
-  console.log(`URL     : ${chalk.cyan.underline(pullRequest.html_url)}`);
+  console.log(`PR      : ${chalk.green(`✔ Open — ${pullRequest.html_url}`)}`);
 }
 
 module.exports = statusCommand;

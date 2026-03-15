@@ -42,11 +42,12 @@ function run(command) {
       await command();
     } catch (error) {
       if (error && error.handled) {
+        console.error(chalk.red(`✖ ${error.message || 'Unexpected error'}`));
         process.exitCode = 1;
         return;
       }
 
-      console.error(chalk.red(error.message || 'Unexpected error'));
+      console.error(chalk.red(`✖ ${error.message || 'Unexpected error'}`));
       process.exitCode = 1;
     }
   };

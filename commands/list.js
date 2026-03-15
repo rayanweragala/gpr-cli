@@ -10,6 +10,11 @@ async function listCommand() {
   const repo = await getRepositoryContext();
   const api = buildApi(config);
 
+  console.log(chalk.white('┌──────────────────────────────────────────────────────────────────────────┐'));
+  console.log(chalk.white('│  Open Pull Requests                                                     │'));
+  console.log(chalk.white('└──────────────────────────────────────────────────────────────────────────┘'));
+  console.log(`Repo    : ${repo.owner}/${repo.repo}`);
+
   let pullRequests;
 
   try {
@@ -36,7 +41,8 @@ async function listCommand() {
       head: [],
       border: []
     },
-    wordWrap: true
+    wordWrap: true,
+    colWidths: [4, 28, 18, 20, 10, 14]
   });
 
   pullRequests.forEach((pullRequest) => {
