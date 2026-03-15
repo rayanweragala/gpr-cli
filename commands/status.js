@@ -1,6 +1,10 @@
 const chalk = require('chalk');
 const { ensureConfig } = require('../lib/conf');
-const { buildApi, findPullRequestByBranch, formatApiError } = require('../lib/api');
+const {
+  buildApi,
+  findPullRequestByBranchWithState,
+  formatApiError
+} = require('../lib/api');
 const { getRepositoryContext } = require('../lib/git');
 
 async function statusCommand() {
@@ -15,15 +19,28 @@ async function statusCommand() {
   console.log(`Branch  : ${chalk.blue(repo.branch)}`);
 
   let pullRequest;
+  let state = 'none';
 
   try {
-    pullRequest = await findPullRequestByBranch(api, repo.owner, repo.repo, repo.branch);
+    pullRequest = await findPullRequestByBranchWithState(api, repo.owner, repo.repo, repo.branch, 'open');
+
+    if (pullRequest) {
+      state = 'open';
+    } else {
+      pullRequest = await findPullRequestByBranchWithState(api, repo.owner, repo.repo, repo.branch, 'closed');
+      state = pullRequest ? 'closed' : 'none';
+    }
   } catch (error) {
     throw formatApiError(error);
   }
 
-  if (!pullRequest) {
-    console.log(`PR      : ${chalk.yellow('✖ No PR found for this branch')}`);
+  if (state === 'none') {
+    console.log(`PR      : ${chalk.yellow('─ None')}`);
+    return;
+  }
+
+  if (state === 'closed') {
+    console.log(`PR      : ${chalk.red(`✖ Closed — ${pullRequest.html_url}`)}`);
     return;
   }
 

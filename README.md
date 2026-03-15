@@ -69,6 +69,13 @@ cd ~/projects/airwatch-dwesk-web
 gpr list
 ```
 
+Output includes:
+
+- colored table rows
+- branch, base, and author columns truncated for readability
+- short PR URL path column
+- total open PR count
+
 ### `gpr status`
 
 Shows the pull request status for the current branch.
@@ -79,6 +86,12 @@ Example:
 cd ~/projects/airwatch-dwesk-web
 gpr status
 ```
+
+Status checks:
+
+- open pull request for the current branch
+- closed pull request for the current branch if no open PR exists
+- no PR state if neither exists
 
 ## Configuration File
 
@@ -153,6 +166,20 @@ Push the branch, then retry:
 ```bash
 git push origin <branch-name>
 gpr open
+```
+
+### Invalid remote URL format
+
+If you see:
+
+```text
+Unable to parse remote URL. Expected /git/OWNER/REPO.git
+```
+
+Your current repository remote is not using the required GitBucket format. Run `gpr` inside a repository whose `origin` looks like:
+
+```bash
+https://repository-3.dxesk.cloud/git/OWNER/REPO.git
 ```
 
 ### Not inside a git repository
