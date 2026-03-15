@@ -9,6 +9,7 @@ const COMMANDS = [
   { cmd: '/review', desc: 'Review a PR  e.g. /review 24' },
   { cmd: '/checkout', desc: 'Checkout a PR branch interactively' },
   { cmd: '/merge', desc: 'Merge a PR  e.g. /merge 24' },
+  { cmd: '/assign', desc: 'Assign reviewer  e.g. /assign 24 rayan_synapse' },
   { cmd: '/mine', desc: 'Your open PRs across all org repos' },
   { cmd: '/watch', desc: 'Live auto-refresh PR dashboard' },
   { cmd: '/stale', desc: 'Stale PRs  e.g. /stale 14  (default 7d)' },

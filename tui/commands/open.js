@@ -7,6 +7,11 @@ const {
   findPullRequestByBranch,
   createPullRequest,
   listBranches,
+  getAuthenticatedUser,
+  getRepoCollaborators,
+  getOrgMembers,
+  requestReviewers,
+  addAssignees,
   formatApiError
 } = require('../../lib/api');
 
@@ -16,7 +21,10 @@ async function openCommand(_args, context) {
 
   try {
     const api = buildApi(config);
-    const branchesData = await listBranches(api, repo.owner, repo.repo);
+    const [branchesData, currentUser] = await Promise.all([
+      listBranches(api, repo.owner, repo.repo),
+      getAuthenticatedUser(api)
+    ]);
     const branchNames = branchesData.map((branch) => branch.name);
 
     if (!branchNames.includes(repo.branch)) {
@@ -45,22 +53,45 @@ async function openCommand(_args, context) {
         ? 'master'
         : branchNames[0];
 
+    let members = await getRepoCollaborators(api, repo.owner, repo.repo);
+    if (!members.length) {
+      members = await getOrgMembers(api, repo.owner);
+    }
+
     setMode('form');
     setActiveForm(React.createElement(OpenForm, {
       repo,
       branches: branchNames,
       defaultBase,
+      members,
+      currentUser,
       onSubmit: async (formData) => {
         setActiveForm(null);
         setMode('loading');
         try {
-          const pr = await createPullRequest(api, repo.owner, repo.repo, formData);
+          const pr = await createPullRequest(api, repo.owner, repo.repo, {
+            title: formData.title,
+            body: formData.body,
+            head: repo.branch,
+            base: formData.base
+          });
+
+          if (formData.reviewers && formData.reviewers.length) {
+            await requestReviewers(api, repo.owner, repo.repo, pr.number, formData.reviewers);
+          }
+
+          if (formData.assignees && formData.assignees.length) {
+            await addAssignees(api, repo.owner, repo.repo, pr.number, formData.assignees);
+          }
+
           push(React.createElement(
             Box,
             { flexDirection: 'column' },
             React.createElement(Text, { color: '#10B981', bold: true }, '✔ Pull Request Created!'),
             line('Title', pr.title),
             line('From', `${formData.head} → ${formData.base}`, '#3B82F6'),
+            line('Reviewers', formData.reviewers && formData.reviewers.length ? formData.reviewers.join(', ') : 'none assigned', '#F59E0B'),
+            line('Assignees', formData.assignees && formData.assignees.length ? formData.assignees.join(', ') : 'none assigned', '#10B981'),
             line('URL', pr.html_url, '#3B82F6')
           ));
         } catch (error) {
@@ -86,9 +117,14 @@ function OpenForm(props) {
   const [title, setTitle] = React.useState(prettyBranch(props.repo.branch));
   const [body, setBody] = React.useState('');
   const [selectedBase, setSelectedBase] = React.useState(props.defaultBase);
+  const [selectedReviewers, setSelectedReviewers] = React.useState([]);
+  const [selectedAssignees, setSelectedAssignees] = React.useState(
+    props.currentUser && props.currentUser.login ? [props.currentUser.login] : []
+  );
+  const hasMembers = Array.isArray(props.members) && props.members.length > 0;
 
   useInput((input, key) => {
-    if (key.escape && typeof props.onCancel === 'function') {
+    if ((step === 'title' || step === 'body' || step === 'base' || step === 'submit') && key.escape && typeof props.onCancel === 'function') {
       props.onCancel();
     }
   });
@@ -101,11 +137,92 @@ function OpenForm(props) {
       React.createElement(SelectInput, {
         items: props.branches.map((branch) => ({ label: branch, value: branch })),
         initialIndex: Math.max(0, props.branches.indexOf(selectedBase)),
-        onSelect: (item) => props.onSubmit({
+        onSelect: (item) => {
+          setSelectedBase(item.value);
+          if (!hasMembers) {
+            setStep('submit');
+            return;
+          }
+          setStep('reviewers');
+        }
+      })
+    );
+  }
+
+  if (step === 'reviewers') {
+    return React.createElement(
+      Box,
+      { flexDirection: 'column' },
+      React.createElement(Text, { color: '#F9FAFB', bold: true }, 'Select reviewers'),
+      React.createElement(Text, { color: '#6B7280' }, '(optional — Enter to skip)'),
+      React.createElement(MultiSelect, {
+        items: props.members,
+        selected: selectedReviewers,
+        hint: 'optional — Enter to skip',
+        onToggle: (login) => {
+          setSelectedReviewers((items) => items.includes(login) ? items.filter((item) => item !== login) : [...items, login]);
+        },
+        onConfirm: (selected) => {
+          setSelectedReviewers(selected);
+          setStep('assignees');
+        },
+        onSkip: () => {
+          setSelectedReviewers([]);
+          setStep('assignees');
+        }
+      })
+    );
+  }
+
+  if (step === 'assignees') {
+    return React.createElement(
+      Box,
+      { flexDirection: 'column' },
+      React.createElement(Text, { color: '#F9FAFB', bold: true }, 'Select assignees'),
+      React.createElement(Text, { color: '#6B7280' }, '(you are pre-selected)'),
+      React.createElement(MultiSelect, {
+        items: props.members,
+        selected: selectedAssignees,
+        hint: 'you are pre-selected',
+        onToggle: (login) => {
+          setSelectedAssignees((items) => items.includes(login) ? items.filter((item) => item !== login) : [...items, login]);
+        },
+        onConfirm: (selected) => props.onSubmit({
           title: title.trim(),
           body: body.trim(),
           head: props.repo.branch,
-          base: item.value
+          base: selectedBase,
+          reviewers: selectedReviewers,
+          assignees: selected
+        }),
+        onSkip: () => props.onSubmit({
+          title: title.trim(),
+          body: body.trim(),
+          head: props.repo.branch,
+          base: selectedBase,
+          reviewers: selectedReviewers,
+          assignees: []
+        })
+      })
+    );
+  }
+
+  if (step === 'submit') {
+    return React.createElement(
+      Box,
+      { flexDirection: 'column' },
+      React.createElement(Text, { color: '#6B7280' }, 'No team members found, skipping reviewer assignment'),
+      React.createElement(Text, { color: '#F9FAFB' }, 'Press Enter to create the pull request'),
+      React.createElement(TextInput, {
+        value: '',
+        onChange: () => {},
+        onSubmit: () => props.onSubmit({
+          title: title.trim(),
+          body: body.trim(),
+          head: props.repo.branch,
+          base: selectedBase,
+          reviewers: [],
+          assignees: selectedAssignees
         })
       })
     );
@@ -120,6 +237,59 @@ function OpenForm(props) {
       onChange: step === 'title' ? setTitle : setBody,
       onSubmit: () => setStep(step === 'title' ? 'body' : 'base')
     })
+  );
+}
+
+function MultiSelect(props) {
+  const [cursor, setCursor] = React.useState(0);
+
+  useInput((input, key) => {
+    if (key.upArrow) {
+      setCursor((value) => Math.max(0, value - 1));
+    }
+    if (key.downArrow) {
+      setCursor((value) => Math.min(props.items.length - 1, value + 1));
+    }
+    if (input === ' ') {
+      if (props.items[cursor]) {
+        props.onToggle(props.items[cursor].login);
+      }
+    }
+    if (key.return) {
+      props.onConfirm(props.selected);
+    }
+    if (key.escape && typeof props.onSkip === 'function') {
+      props.onSkip();
+    }
+  });
+
+  return React.createElement(
+    Box,
+    { flexDirection: 'column' },
+    ...props.items.map((item, index) => React.createElement(
+      Box,
+      { key: item.login },
+      React.createElement(Text, { color: props.selected.includes(item.login) ? '#10B981' : '#6B7280' }, props.selected.includes(item.login) ? '◉ ' : '○ '),
+      React.createElement(Text, {
+        backgroundColor: index === cursor ? '#374151' : undefined,
+        color: index === cursor ? '#F9FAFB' : '#9CA3AF'
+      }, item.login)
+    )),
+    React.createElement(
+      Box,
+      { marginTop: 1 },
+      React.createElement(
+        Text,
+        { color: '#6B7280' },
+        React.createElement(Text, { color: '#F59E0B' }, 'Space'),
+        ' toggle  ',
+        React.createElement(Text, { color: '#F59E0B' }, 'Enter'),
+        ' confirm  ',
+        React.createElement(Text, { color: '#F59E0B' }, 'Esc'),
+        ' skip'
+      )
+    ),
+    props.hint ? React.createElement(Text, { color: '#6B7280', dimColor: true }, props.hint) : null
   );
 }
 

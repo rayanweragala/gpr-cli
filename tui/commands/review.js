@@ -115,7 +115,18 @@ async function loadReview(number, context) {
       React.createElement(Text, { color: '#10B981' }, `Additions     : +${pullRequest.additions || 0}`),
       React.createElement(Text, { color: '#EF4444' }, `Deletions     : -${pullRequest.deletions || 0}`),
       React.createElement(Text, { color: '#F9FAFB' }, `Comments      : ${comments.length}`),
-      React.createElement(Text, { color: '#F9FAFB' }, `Reviewers     : ${reviewerText(pullRequest, reviews)}`)
+      React.createElement(
+        Box,
+        { flexDirection: 'column', marginTop: 1 },
+        React.createElement(Text, { color: '#7C3AED', bold: true }, 'Reviewers:'),
+        renderReviewers(pullRequest, reviews)
+      ),
+      React.createElement(
+        Box,
+        { flexDirection: 'column', marginTop: 1 },
+        React.createElement(Text, { color: '#7C3AED', bold: true }, 'Assignees:'),
+        renderAssignees(pullRequest)
+      )
     ));
   } catch (error) {
     push(React.createElement(Text, { color: '#EF4444' }, `✖ ${formatApiError(error).message}`));
@@ -142,28 +153,70 @@ async function safeLoad(work) {
   }
 }
 
-function reviewerText(pullRequest, reviews) {
-  const latest = new Map();
-  reviews.forEach((review) => {
-    if (review.user && review.user.login) {
-      latest.set(review.user.login, String(review.state || '').toLowerCase());
-    }
-  });
+function renderReviewers(pullRequest, reviews) {
+  const requestedReviewers = pullRequest.requested_reviewers || [];
 
-  const requested = (pullRequest.requested_reviewers || []).map((reviewer) => reviewer.login);
-  const parts = [];
+  if (!reviews.length && !requestedReviewers.length) {
+    return React.createElement(Text, { color: '#6B7280' }, '  No reviewers assigned');
+  }
 
-  latest.forEach((state, login) => {
-    parts.push(`${login} (${state})`);
-  });
+  return React.createElement(
+    Box,
+    { flexDirection: 'column' },
+    ...requestedReviewers.map((reviewer) => React.createElement(
+      Box,
+      { key: `requested-${reviewer.login}` },
+      React.createElement(Text, { color: '#F59E0B' }, '  ◌ '),
+      React.createElement(Text, { color: '#F9FAFB' }, reviewer.login),
+      React.createElement(Text, { color: '#6B7280' }, ' (pending review)')
+    )),
+    ...reviews.map((review) => React.createElement(
+      Box,
+      { key: `review-${review.user.login}-${review.id || review.submitted_at || review.state}` },
+      review.state === 'APPROVED'
+        ? React.createElement(
+            React.Fragment,
+            null,
+            React.createElement(Text, { color: '#10B981' }, '  ✔ '),
+            React.createElement(Text, { color: '#F9FAFB' }, review.user.login),
+            React.createElement(Text, { color: '#10B981' }, ' approved')
+          )
+        : review.state === 'CHANGES_REQUESTED'
+          ? React.createElement(
+              React.Fragment,
+              null,
+              React.createElement(Text, { color: '#EF4444' }, '  ✖ '),
+              React.createElement(Text, { color: '#F9FAFB' }, review.user.login),
+              React.createElement(Text, { color: '#EF4444' }, ' changes requested')
+            )
+          : React.createElement(
+              React.Fragment,
+              null,
+              React.createElement(Text, { color: '#F59E0B' }, '  ◎ '),
+              React.createElement(Text, { color: '#F9FAFB' }, review.user.login),
+              React.createElement(Text, { color: '#6B7280' }, ' commented')
+            )
+    ))
+  );
+}
 
-  requested.forEach((login) => {
-    if (!latest.has(login)) {
-      parts.push(`${login} (pending)`);
-    }
-  });
+function renderAssignees(pullRequest) {
+  const assignees = pullRequest.assignees || [];
 
-  return parts.length ? parts.join(', ') : 'None';
+  if (!assignees.length) {
+    return React.createElement(Text, { color: '#6B7280' }, '  No assignees');
+  }
+
+  return React.createElement(
+    Box,
+    { flexDirection: 'column' },
+    ...assignees.map((assignee) => React.createElement(
+      Box,
+      { key: assignee.login },
+      React.createElement(Text, { color: '#3B82F6' }, '  → '),
+      React.createElement(Text, { color: '#F9FAFB' }, assignee.login)
+    ))
+  );
 }
 
 module.exports = reviewCommand;
