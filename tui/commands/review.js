@@ -11,12 +11,13 @@ const {
   formatApiError
 } = require('../../lib/api');
 const StatusBadge = require('../components/StatusBadge');
+const theme = require('../theme');
 
 async function reviewCommand(args, context) {
   const number = args[0] ? Number(args[0]) : undefined;
 
   if (args[0] && Number.isNaN(number)) {
-    context.push(React.createElement(Text, { color: '#EF4444' }, '✖ Usage: /review [pr-number]'));
+    context.push(React.createElement(Text, { color: theme.ERROR }, '✖ Usage: /review [pr-number]'));
     return;
   }
 
@@ -28,7 +29,7 @@ async function reviewCommand(args, context) {
       const pullRequests = await listOpenPullRequests(api, context.repo.owner, context.repo.repo);
 
       if (!pullRequests.length) {
-        context.push(React.createElement(Text, { color: '#F59E0B' }, 'No open pull requests found.'));
+        context.push(React.createElement(Text, { color: theme.WARNING }, 'No open pull requests found.'));
         context.setMode('idle');
         return;
       }
@@ -40,7 +41,7 @@ async function reviewCommand(args, context) {
         onCancel: () => cancel(context)
       }));
     } catch (error) {
-      context.push(React.createElement(Text, { color: '#EF4444' }, `✖ ${formatApiError(error).message}`));
+      context.push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
       context.setMode('idle');
     }
 
@@ -60,7 +61,7 @@ function ReviewPicker(props) {
   return React.createElement(
     Box,
     { flexDirection: 'column' },
-    React.createElement(Text, { color: '#F9FAFB', bold: true }, 'Select a pull request to review'),
+    React.createElement(Text, { color: theme.TEXT_PRIMARY, bold: true }, 'Select a pull request to review'),
     React.createElement(SelectInput, {
       items: props.pullRequests.map((pullRequest) => ({
         label: `#${pullRequest.number} ${pullRequest.title} (${pullRequest.head.ref} → ${pullRequest.base.ref})`,
@@ -91,45 +92,45 @@ async function loadReview(number, context) {
     push(React.createElement(
       Box,
       { flexDirection: 'column' },
-      React.createElement(Text, { color: '#7C3AED', bold: true }, `PR #${pullRequest.number} — ${pullRequest.title}`),
-      React.createElement(Text, { color: '#F9FAFB' }, `Author   : ${pullRequest.user ? pullRequest.user.login : 'unknown'}`),
+      React.createElement(Text, { color: theme.SECONDARY, bold: true }, `PR #${pullRequest.number} — ${pullRequest.title}`),
+      React.createElement(Text, { color: theme.TEXT_MUTED }, 'Author   : ', React.createElement(Text, { color: theme.TEXT_PRIMARY }, pullRequest.user ? pullRequest.user.login : 'unknown')),
       React.createElement(
         Text,
         null,
-        React.createElement(Text, { color: '#6B7280' }, 'Branch   : '),
-        React.createElement(Text, { color: '#3B82F6' }, pullRequest.head.ref),
-        React.createElement(Text, { color: '#F9FAFB' }, ' → '),
-        React.createElement(Text, { color: '#10B981' }, pullRequest.base.ref)
+        React.createElement(Text, { color: theme.TEXT_MUTED }, 'Branch   : '),
+        React.createElement(Text, { color: theme.INFO }, pullRequest.head.ref),
+        React.createElement(Text, { color: theme.TEXT_PRIMARY }, ' → '),
+        React.createElement(Text, { color: theme.SUCCESS }, pullRequest.base.ref)
       ),
       React.createElement(
         Box,
         null,
-        React.createElement(Text, { color: '#6B7280' }, 'Status   : '),
+        React.createElement(Text, { color: theme.TEXT_MUTED }, 'Status   : '),
         React.createElement(StatusBadge, { state: pullRequest.merged_at ? 'merged' : pullRequest.state === 'closed' ? 'closed' : 'open' })
       ),
-      React.createElement(Text, { color: '#F9FAFB' }, `Created  : ${format(pullRequest.created_at)}`),
-      React.createElement(Text, { color: '#F9FAFB' }, `Updated  : ${format(pullRequest.updated_at)}`),
-      React.createElement(Text, { color: '#6B7280' }, 'Description:'),
-      React.createElement(Text, { color: '#F9FAFB' }, pullRequest.body && pullRequest.body.trim() ? pullRequest.body : '(No description)'),
-      React.createElement(Text, { color: '#F9FAFB' }, `Files Changed : ${pullRequest.changed_files || 0}`),
-      React.createElement(Text, { color: '#10B981' }, `Additions     : +${pullRequest.additions || 0}`),
-      React.createElement(Text, { color: '#EF4444' }, `Deletions     : -${pullRequest.deletions || 0}`),
-      React.createElement(Text, { color: '#F9FAFB' }, `Comments      : ${comments.length}`),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY }, `Created  : ${format(pullRequest.created_at)}`),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY }, `Updated  : ${format(pullRequest.updated_at)}`),
+      React.createElement(Text, { color: theme.TEXT_MUTED }, 'Description:'),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY }, pullRequest.body && pullRequest.body.trim() ? pullRequest.body : '(No description)'),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY }, `Files Changed : ${pullRequest.changed_files || 0}`),
+      React.createElement(Text, { color: theme.SUCCESS }, `Additions     : +${pullRequest.additions || 0}`),
+      React.createElement(Text, { color: theme.ERROR }, `Deletions     : -${pullRequest.deletions || 0}`),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY }, `Comments      : ${comments.length}`),
       React.createElement(
         Box,
         { flexDirection: 'column', marginTop: 1 },
-        React.createElement(Text, { color: '#7C3AED', bold: true }, 'Reviewers:'),
+        React.createElement(Text, { color: theme.PRIMARY, bold: true }, 'Reviewers:'),
         renderReviewers(pullRequest, reviews)
       ),
       React.createElement(
         Box,
         { flexDirection: 'column', marginTop: 1 },
-        React.createElement(Text, { color: '#7C3AED', bold: true }, 'Assignees:'),
+        React.createElement(Text, { color: theme.PRIMARY, bold: true }, 'Assignees:'),
         renderAssignees(pullRequest)
       )
     ));
   } catch (error) {
-    push(React.createElement(Text, { color: '#EF4444' }, `✖ ${formatApiError(error).message}`));
+    push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
   } finally {
     setMode('idle');
   }
@@ -138,7 +139,7 @@ async function loadReview(number, context) {
 function cancel(context) {
   context.setActiveForm(null);
   context.setMode('idle');
-  context.push(React.createElement(Text, { color: '#6B7280' }, 'Review cancelled.'));
+  context.push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'Review cancelled.'));
 }
 
 async function safeLoad(work) {
@@ -157,7 +158,7 @@ function renderReviewers(pullRequest, reviews) {
   const requestedReviewers = pullRequest.requested_reviewers || [];
 
   if (!reviews.length && !requestedReviewers.length) {
-    return React.createElement(Text, { color: '#6B7280' }, '  No reviewers assigned');
+    return React.createElement(Text, { color: theme.TEXT_MUTED }, '  No reviewers assigned');
   }
 
   return React.createElement(
@@ -166,9 +167,9 @@ function renderReviewers(pullRequest, reviews) {
     ...requestedReviewers.map((reviewer) => React.createElement(
       Box,
       { key: `requested-${reviewer.login}` },
-      React.createElement(Text, { color: '#F59E0B' }, '  ◌ '),
-      React.createElement(Text, { color: '#F9FAFB' }, reviewer.login),
-      React.createElement(Text, { color: '#6B7280' }, ' (pending review)')
+      React.createElement(Text, { color: theme.WARNING }, '  ◌ '),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY }, reviewer.login),
+      React.createElement(Text, { color: theme.TEXT_MUTED }, ' (pending review)')
     )),
     ...reviews.map((review) => React.createElement(
       Box,
@@ -177,24 +178,24 @@ function renderReviewers(pullRequest, reviews) {
         ? React.createElement(
             React.Fragment,
             null,
-            React.createElement(Text, { color: '#10B981' }, '  ✔ '),
-            React.createElement(Text, { color: '#F9FAFB' }, review.user.login),
-            React.createElement(Text, { color: '#10B981' }, ' approved')
+            React.createElement(Text, { color: theme.SUCCESS }, '  ✔ '),
+            React.createElement(Text, { color: theme.TEXT_PRIMARY }, review.user.login),
+            React.createElement(Text, { color: theme.SUCCESS }, ' approved')
           )
         : review.state === 'CHANGES_REQUESTED'
           ? React.createElement(
               React.Fragment,
               null,
-              React.createElement(Text, { color: '#EF4444' }, '  ✖ '),
-              React.createElement(Text, { color: '#F9FAFB' }, review.user.login),
-              React.createElement(Text, { color: '#EF4444' }, ' changes requested')
+              React.createElement(Text, { color: theme.ERROR }, '  ✖ '),
+              React.createElement(Text, { color: theme.TEXT_PRIMARY }, review.user.login),
+              React.createElement(Text, { color: theme.ERROR }, ' changes requested')
             )
           : React.createElement(
               React.Fragment,
               null,
-              React.createElement(Text, { color: '#F59E0B' }, '  ◎ '),
-              React.createElement(Text, { color: '#F9FAFB' }, review.user.login),
-              React.createElement(Text, { color: '#6B7280' }, ' commented')
+              React.createElement(Text, { color: theme.WARNING }, '  ◎ '),
+              React.createElement(Text, { color: theme.TEXT_PRIMARY }, review.user.login),
+              React.createElement(Text, { color: theme.TEXT_MUTED }, ' commented')
             )
     ))
   );
@@ -204,7 +205,7 @@ function renderAssignees(pullRequest) {
   const assignees = pullRequest.assignees || [];
 
   if (!assignees.length) {
-    return React.createElement(Text, { color: '#6B7280' }, '  No assignees');
+    return React.createElement(Text, { color: theme.TEXT_MUTED }, '  No assignees');
   }
 
   return React.createElement(
@@ -213,8 +214,8 @@ function renderAssignees(pullRequest) {
     ...assignees.map((assignee) => React.createElement(
       Box,
       { key: assignee.login },
-      React.createElement(Text, { color: '#3B82F6' }, '  → '),
-      React.createElement(Text, { color: '#F9FAFB' }, assignee.login)
+      React.createElement(Text, { color: theme.INFO }, '  → '),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY }, assignee.login)
     ))
   );
 }

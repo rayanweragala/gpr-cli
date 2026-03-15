@@ -5,6 +5,7 @@ const path = require('path');
 const { Box, Text, useInput } = require('ink');
 const TextInput = require('ink-text-input').default || require('ink-text-input');
 const { buildApi, getAuthenticatedUser, formatApiError } = require('../../lib/api');
+const theme = require('../theme');
 
 const CONFIG_PATH = path.join(os.homedir(), '.gpr-config.json');
 
@@ -15,7 +16,7 @@ async function configCommand(_args, context) {
     onCancel: () => {
       context.setActiveForm(null);
       context.setMode('idle');
-      context.push(React.createElement(Text, { color: '#6B7280' }, 'Config update cancelled.'));
+      context.push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'Config update cancelled.'));
     },
     onSubmit: async (formData) => {
       context.setActiveForm(null);
@@ -35,11 +36,11 @@ async function configCommand(_args, context) {
         context.push(React.createElement(
           Box,
           { flexDirection: 'column' },
-          React.createElement(Text, { color: '#10B981', bold: true }, '✔ Connection successful'),
-          React.createElement(Text, { color: '#6B7280' }, CONFIG_PATH)
+          React.createElement(Text, { color: theme.SUCCESS, bold: true }, '✔ Connection successful'),
+          React.createElement(Text, { color: theme.TEXT_MUTED }, CONFIG_PATH)
         ));
       } catch (error) {
-        context.push(React.createElement(Text, { color: '#EF4444' }, `✖ ${formatApiError(error).message}`));
+        context.push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
       } finally {
         context.setMode('idle');
       }
@@ -74,7 +75,7 @@ function renderField(label, value, onChange, onSubmit, masked) {
   return React.createElement(
     Box,
     { flexDirection: 'column' },
-    React.createElement(Text, { color: '#F9FAFB', bold: true }, label),
+    React.createElement(Text, { color: theme.TEXT_PRIMARY, bold: true }, label),
     React.createElement(TextInput, {
       value,
       onChange,

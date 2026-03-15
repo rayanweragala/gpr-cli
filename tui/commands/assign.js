@@ -10,6 +10,7 @@ const {
   addAssignees,
   formatApiError
 } = require('../../lib/api');
+const theme = require('../theme');
 
 async function assignCommand(args, context) {
   const { config, repo, push, setMode, setActiveForm } = context;
@@ -23,7 +24,7 @@ async function assignCommand(args, context) {
       const reviewer = args[1];
 
       if (Number.isNaN(prNumber)) {
-        push(React.createElement(Text, { color: '#EF4444' }, '✖ Usage: /assign 24 rayan_synapse'));
+        push(React.createElement(Text, { color: theme.ERROR }, '✖ Usage: /assign 24 rayan_synapse'));
         setMode('idle');
         return;
       }
@@ -36,7 +37,7 @@ async function assignCommand(args, context) {
     const requestedPrNumber = args[0] ? Number.parseInt(args[0], 10) : null;
 
     if (args[0] && Number.isNaN(requestedPrNumber)) {
-      push(React.createElement(Text, { color: '#EF4444' }, '✖ Usage: /assign 24 [reviewer]'));
+      push(React.createElement(Text, { color: theme.ERROR }, '✖ Usage: /assign 24 [reviewer]'));
       setMode('idle');
       return;
     }
@@ -86,7 +87,7 @@ async function assignCommand(args, context) {
       const message = requestedPrNumber === null
         ? 'No open pull requests found.'
         : `Pull request #${requestedPrNumber} was not found in open pull requests.`;
-      push(React.createElement(Text, { color: '#F59E0B' }, message));
+      push(React.createElement(Text, { color: theme.WARNING }, message));
       setMode('idle');
       return;
     }
@@ -103,7 +104,7 @@ async function assignCommand(args, context) {
         try {
           await assignReviewer(api, repo, prNumber, reviewers, push);
         } catch (error) {
-          push(React.createElement(Text, { color: '#EF4444' }, `✖ ${formatApiError(error).message}`));
+          push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
         } finally {
           setMode('idle');
         }
@@ -111,11 +112,11 @@ async function assignCommand(args, context) {
       onCancel: () => {
         setActiveForm(null);
         setMode('idle');
-        push(React.createElement(Text, { color: '#6B7280' }, 'Assignment cancelled.'));
+        push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'Assignment cancelled.'));
       }
     }));
   } catch (error) {
-    push(React.createElement(Text, { color: '#EF4444' }, `✖ ${formatApiError(error).message}`));
+    push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
     setMode('idle');
   }
 }
@@ -129,12 +130,12 @@ async function assignReviewer(api, repo, prNumber, reviewers, push) {
   push(React.createElement(
     Box,
     { flexDirection: 'column' },
-    React.createElement(Text, { color: '#10B981', bold: true }, `✔ Assigned to PR #${prNumber}`),
+    React.createElement(Text, { color: theme.SUCCESS, bold: true }, `✔ Assigned to PR #${prNumber}`),
     ...reviewers.map((reviewer) => React.createElement(
       Box,
       { key: reviewer },
-      React.createElement(Text, { color: '#6B7280' }, '  -> '),
-      React.createElement(Text, { color: '#F59E0B' }, reviewer)
+      React.createElement(Text, { color: theme.TEXT_MUTED }, '  -> '),
+      React.createElement(Text, { color: theme.WARNING }, reviewer)
     ))
   ));
 }
@@ -168,13 +169,13 @@ function AssignForm(props) {
 
   if (step === 'pr') {
     if (!props.pullRequests.length) {
-      return React.createElement(Text, { color: '#F59E0B' }, 'No open pull requests found.');
+      return React.createElement(Text, { color: theme.WARNING }, 'No open pull requests found.');
     }
 
     return React.createElement(
       Box,
       { flexDirection: 'column' },
-      React.createElement(Text, { color: '#F9FAFB', bold: true }, 'Select a pull request'),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY, bold: true }, 'Select a pull request'),
       React.createElement(SelectInput, {
         items: props.pullRequests.map((pullRequest) => ({
           label: `#${pullRequest.number} ${pullRequest.title}`,
@@ -189,22 +190,22 @@ function AssignForm(props) {
   }
 
   if (!selectedPr) {
-    return React.createElement(Text, { color: '#F59E0B' }, 'No open pull requests found.');
+    return React.createElement(Text, { color: theme.WARNING }, 'No open pull requests found.');
   }
 
   if (!hasMembers) {
     return React.createElement(
       Box,
       { flexDirection: 'column', paddingX: 1 },
-      React.createElement(Text, { color: '#7C3AED', bold: true }, `PR #${selectedPr.number} - ${selectedPr.title}`),
+      React.createElement(Text, { color: theme.PRIMARY, bold: true }, `PR #${selectedPr.number} - ${selectedPr.title}`),
       React.createElement(
         Box,
         { marginTop: 1 },
-        React.createElement(Text, { color: '#6B7280' }, 'Enter reviewer username:')
+        React.createElement(Text, { color: theme.TEXT_MUTED }, 'Enter reviewer username:')
       ),
       React.createElement(
         Box,
-        { marginTop: 1, borderStyle: 'round', borderColor: '#7C3AED', paddingX: 1 },
+        { marginTop: 1, borderStyle: 'round', borderColor: theme.PRIMARY, paddingX: 1 },
         React.createElement(TextInput, {
           value: manualInput,
           onChange: setManualInput,
@@ -227,7 +228,7 @@ function AssignForm(props) {
       ),
       React.createElement(
         Text,
-        { color: '#6B7280', dimColor: true },
+        { color: theme.TEXT_DIM, dimColor: true },
         'Enter to confirm  Esc to cancel  Separate multiple usernames with comma'
       )
     );
@@ -270,8 +271,8 @@ function MultiSelect(props) {
   return React.createElement(
     Box,
     { flexDirection: 'column', paddingX: 1 },
-    React.createElement(Text, { color: '#7C3AED', bold: true }, props.title),
-    React.createElement(Text, { color: '#6B7280', dimColor: true }, props.subtitle),
+    React.createElement(Text, { color: theme.PRIMARY, bold: true }, props.title),
+    React.createElement(Text, { color: theme.TEXT_MUTED, dimColor: true }, props.subtitle),
     React.createElement(
       Box,
       { marginTop: 1, flexDirection: 'column' },
@@ -279,10 +280,10 @@ function MultiSelect(props) {
         Box,
         {
           key: item.login,
-          backgroundColor: index === cursor ? '#374151' : undefined
+          backgroundColor: index === cursor ? theme.SELECTED_BG : undefined
         },
-        React.createElement(Text, { color: props.selected.includes(item.login) ? '#10B981' : '#6B7280' }, props.selected.includes(item.login) ? '◉ ' : '○ '),
-        React.createElement(Text, { color: index === cursor ? '#F9FAFB' : '#9CA3AF' }, item.login)
+        React.createElement(Text, { color: props.selected.includes(item.login) ? theme.SUCCESS : theme.TEXT_MUTED }, props.selected.includes(item.login) ? '◉ ' : '○ '),
+        React.createElement(Text, { color: index === cursor ? theme.SELECTED_TEXT : theme.TEXT_DIM }, item.login)
       ))
     ),
     React.createElement(
@@ -290,19 +291,19 @@ function MultiSelect(props) {
       { marginTop: 1 },
       React.createElement(
         Text,
-        { color: '#6B7280' },
-        React.createElement(Text, { color: '#F59E0B' }, '↑↓'),
+        { color: theme.TEXT_MUTED },
+        React.createElement(Text, { color: theme.WARNING }, '↑↓'),
         ' navigate  ',
-        React.createElement(Text, { color: '#F59E0B' }, 'Space'),
+        React.createElement(Text, { color: theme.WARNING }, 'Space'),
         ' toggle  ',
-        React.createElement(Text, { color: '#F59E0B' }, 'Enter'),
+        React.createElement(Text, { color: theme.WARNING }, 'Enter'),
         ' confirm  ',
-        React.createElement(Text, { color: '#F59E0B' }, 'Esc'),
+        React.createElement(Text, { color: theme.WARNING }, 'Esc'),
         ' cancel'
       )
     ),
     props.selected.length
-      ? React.createElement(Text, { color: '#10B981' }, `Selected: ${props.selected.join(', ')}`)
+      ? React.createElement(Text, { color: theme.SUCCESS }, `Selected: ${props.selected.join(', ')}`)
       : null
   );
 }

@@ -3,6 +3,7 @@ const { Box, Text, useInput } = require('ink');
 const SelectInput = require('ink-select-input').default || require('ink-select-input');
 const { buildApi, listOpenPullRequests, formatApiError } = require('../../lib/api');
 const { fetchOrigin, branchExistsLocally, checkoutBranch } = require('../../lib/git');
+const theme = require('../theme');
 
 async function checkoutCommand(_args, context) {
   const { config, repo, push, setMode, setActiveForm } = context;
@@ -13,7 +14,7 @@ async function checkoutCommand(_args, context) {
     const pullRequests = await listOpenPullRequests(api, repo.owner, repo.repo);
 
     if (!pullRequests.length) {
-      push(React.createElement(Text, { color: '#F59E0B' }, 'No open pull requests found.'));
+      push(React.createElement(Text, { color: theme.WARNING }, 'No open pull requests found.'));
       setMode('idle');
       return;
     }
@@ -31,11 +32,11 @@ async function checkoutCommand(_args, context) {
           push(React.createElement(
             Box,
             { flexDirection: 'column' },
-            React.createElement(Text, { color: '#10B981', bold: true }, `✔ Switched to branch: ${pullRequest.head.ref}`),
-            React.createElement(Text, { color: '#6B7280' }, 'Tip: Run "gpr status" to see PR details')
+            React.createElement(Text, { color: theme.SUCCESS, bold: true }, `✔ Switched to branch: ${pullRequest.head.ref}`),
+            React.createElement(Text, { color: theme.TEXT_MUTED }, 'Tip: Run "gpr status" to see PR details')
           ));
         } catch (error) {
-          push(React.createElement(Text, { color: '#EF4444' }, `✖ ${error.message || 'Failed to checkout branch'}`));
+          push(React.createElement(Text, { color: theme.ERROR }, `✖ ${error.message || 'Failed to checkout branch'}`));
         } finally {
           setMode('idle');
         }
@@ -43,11 +44,11 @@ async function checkoutCommand(_args, context) {
       onCancel: () => {
         setActiveForm(null);
         setMode('idle');
-        push(React.createElement(Text, { color: '#6B7280' }, 'Checkout cancelled.'));
+        push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'Checkout cancelled.'));
       }
     }));
   } catch (error) {
-    push(React.createElement(Text, { color: '#EF4444' }, `✖ ${formatApiError(error).message}`));
+    push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
     setMode('idle');
   }
 }
@@ -62,7 +63,7 @@ function CheckoutForm(props) {
   return React.createElement(
     Box,
     { flexDirection: 'column' },
-    React.createElement(Text, { color: '#F9FAFB', bold: true }, 'Select a pull request branch to checkout'),
+    React.createElement(Text, { color: theme.TEXT_PRIMARY, bold: true }, 'Select a pull request branch to checkout'),
     React.createElement(SelectInput, {
       items: props.pullRequests.map((pullRequest) => ({
         label: `#${pullRequest.number} ${pullRequest.title} (${pullRequest.head.ref} → ${pullRequest.base.ref})`,

@@ -2,6 +2,7 @@ const React = require('react');
 const { Box, Text, useInput } = require('ink');
 const { format } = require('timeago.js');
 const { buildApi, listOpenPullRequests, formatApiError } = require('../../lib/api');
+const theme = require('../theme');
 
 let activeListId = 0;
 
@@ -14,7 +15,7 @@ async function listCommand(_args, context) {
     const pullRequests = await listOpenPullRequests(api, repo.owner, repo.repo);
 
     if (!pullRequests.length) {
-      push(React.createElement(Text, { color: '#F59E0B' }, 'No open pull requests found.'));
+      push(React.createElement(Text, { color: theme.WARNING }, 'No open pull requests found.'));
       return;
     }
 
@@ -34,7 +35,7 @@ async function listCommand(_args, context) {
       }
     }));
   } catch (error) {
-    push(React.createElement(Text, { color: '#EF4444' }, `✖ ${formatApiError(error).message}`));
+    push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
   } finally {
     setMode('idle');
   }
@@ -105,19 +106,19 @@ function ListOutput(props) {
     React.createElement(
       Box,
       { marginBottom: 1 },
-      React.createElement(Text, { color: '#374151' }, '─'.repeat(Math.min((process.stdout.columns || 120) - 2, 104)))
+      React.createElement(Text, { color: theme.BORDER_DIM }, '─'.repeat(Math.min((process.stdout.columns || 120) - 2, 104)))
     ),
     ...props.pullRequests.map((pullRequest, index) => {
       const selected = isActive && index === selectedIndex;
       return React.createElement(
         Box,
-        { key: pullRequest.number, backgroundColor: selected ? '#7C3AED' : undefined },
-        dataCell(String(pullRequest.number), 5, selected ? '#FFFFFF' : '#06B6D4', true),
-        dataCell(truncate(pullRequest.title, 29), 30, selected ? '#FFFFFF' : '#F9FAFB'),
-        dataCell(truncate(pullRequest.user ? pullRequest.user.login : '', 17), 18, selected ? '#E5E7EB' : '#6B7280'),
-        dataCell(truncate(pullRequest.head ? pullRequest.head.ref : '', 21), 22, selected ? '#BFDBFE' : '#3B82F6'),
-        dataCell(truncate(pullRequest.base ? pullRequest.base.ref : '', 15), 16, selected ? '#BBF7D0' : '#10B981'),
-        dataCell(format(pullRequest.created_at), 13, selected ? '#FFFFFF' : getAgeColor(pullRequest.created_at))
+        { key: pullRequest.number, backgroundColor: selected ? theme.SELECTED_BG : undefined },
+        dataCell(String(pullRequest.number), 5, selected ? theme.SELECTED_TEXT : theme.SECONDARY, true),
+        dataCell(truncate(pullRequest.title, 29), 30, selected ? theme.SELECTED_TEXT : theme.TEXT_PRIMARY),
+        dataCell(truncate(pullRequest.user ? pullRequest.user.login : '', 17), 18, selected ? theme.SELECTED_TEXT : theme.TEXT_MUTED),
+        dataCell(truncate(pullRequest.head ? pullRequest.head.ref : '', 21), 22, selected ? theme.SELECTED_TEXT : theme.INFO),
+        dataCell(truncate(pullRequest.base ? pullRequest.base.ref : '', 15), 16, selected ? theme.SELECTED_TEXT : theme.SUCCESS),
+        dataCell(format(pullRequest.created_at), 13, selected ? theme.SELECTED_TEXT : getAgeColor(pullRequest.created_at))
       );
     }),
     isActive ? React.createElement(
@@ -125,16 +126,16 @@ function ListOutput(props) {
       { marginTop: 1 },
       React.createElement(
         Text,
-        { color: '#6B7280' },
-        React.createElement(Text, { color: '#F59E0B' }, '↑↓'),
+        { color: theme.TEXT_DIM },
+        React.createElement(Text, { color: theme.WARNING }, '↑↓'),
         ' navigate  ',
-        React.createElement(Text, { color: '#F59E0B' }, 'Enter'),
+        React.createElement(Text, { color: theme.WARNING }, 'Enter'),
         ' view details  ',
-        React.createElement(Text, { color: '#F59E0B' }, 'Tab'),
+        React.createElement(Text, { color: theme.WARNING }, 'Tab'),
         ' skip to input'
       )
     ) : null,
-    React.createElement(Text, { color: '#6B7280' }, `Total: ${props.pullRequests.length} open pull requests`)
+    React.createElement(Text, { color: theme.TEXT_MUTED }, `Total: ${props.pullRequests.length} open pull requests`)
   );
 }
 
@@ -142,7 +143,7 @@ function headerCell(label, width) {
   return React.createElement(
     Box,
     { width },
-    React.createElement(Text, { bold: true, color: '#7C3AED' }, label)
+    React.createElement(Text, { bold: true, color: theme.PRIMARY }, label)
   );
 }
 
@@ -156,9 +157,9 @@ function dataCell(value, width, color, bold) {
 
 function getAgeColor(createdAt) {
   const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24));
-  if (days < 7) return '#10B981';
-  if (days < 30) return '#F59E0B';
-  return '#EF4444';
+  if (days < 7) return theme.SUCCESS;
+  if (days < 30) return theme.WARNING;
+  return theme.ERROR;
 }
 
 function truncate(str, len) {

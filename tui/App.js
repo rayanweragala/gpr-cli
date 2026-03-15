@@ -6,6 +6,8 @@ const TopBar = require('./TopBar');
 const ContentArea = require('./ContentArea');
 const InputBar = require('./InputBar');
 const AutoSuggest = require('./AutoSuggest');
+const { filterCommands } = require('./AutoSuggest');
+const theme = require('./theme');
 
 const COMMAND_MAP = {
   list: require('./commands/list'),
@@ -139,7 +141,7 @@ function App(props) {
   });
 
   function pushCommand(command) {
-    push(React.createElement(Text, { color: '#7C3AED' }, `❯ ${command}`));
+    push(React.createElement(Text, { color: theme.PRIMARY }, `❯ ${command}`));
     setCmdLog((items) => [...items.slice(-49), command]);
     setCmdLogIndex(-1);
   }
@@ -155,6 +157,7 @@ function App(props) {
     }
 
     const typed = String(value || '').trim();
+    const suggestions = filterCommands(typed);
     const selectedSuggestion = suggestions[Math.max(0, Math.min(suggestIndex, Math.max(0, suggestions.length - 1)))];
     const trimmed = shouldRunSuggestion(typed, showSuggest, selectedSuggestion)
       ? selectedSuggestion.cmd
@@ -169,7 +172,7 @@ function App(props) {
     setSuggestIndex(0);
 
     if (!trimmed.startsWith('/')) {
-      push(React.createElement(Text, { color: '#EF4444' }, '✖ Commands start with /  Try /help'));
+      push(React.createElement(Text, { color: theme.ERROR }, '✖ Commands start with /  Try /help'));
       return;
     }
 
@@ -270,18 +273,18 @@ function createInitialHistory(showWelcome) {
   return [React.createElement(
     Box,
     { key: 'welcome', flexDirection: 'column', marginBottom: 1 },
-    React.createElement(Text, { color: '#7C3AED', bold: true }, '╔══════════════════════════════════╗'),
-    React.createElement(Text, { color: '#7C3AED', bold: true }, '║   GPR — Pull Request Shell      ║'),
-    React.createElement(Text, { color: '#7C3AED', bold: true }, '╚══════════════════════════════════╝'),
+    React.createElement(Text, { color: theme.PRIMARY, bold: true }, '╔══════════════════════════════════╗'),
+    React.createElement(Text, { color: theme.PRIMARY, bold: true }, '║   GPR — Pull Request Shell      ║'),
+    React.createElement(Text, { color: theme.PRIMARY, bold: true }, '╚══════════════════════════════════╝'),
     React.createElement(
       Text,
-      { color: '#6B7280' },
+      { color: theme.TEXT_MUTED },
       'Type ',
-      React.createElement(Text, { color: '#F9FAFB' }, '/help'),
+      React.createElement(Text, { color: theme.SECONDARY }, '/help'),
       ' to see commands  ',
-      React.createElement(Text, { color: '#F9FAFB' }, '/'),
+      React.createElement(Text, { color: theme.SECONDARY }, '/'),
       ' for autocomplete  ',
-      React.createElement(Text, { color: '#F9FAFB' }, 'Ctrl+C'),
+      React.createElement(Text, { color: theme.WARNING }, 'Ctrl+C'),
       ' to quit'
     )
   )];
@@ -307,20 +310,20 @@ async function runCommand(rawInput, context) {
   if (!handler) {
     context.push(React.createElement(
       Text,
-      { color: '#EF4444' },
+      { color: theme.ERROR },
       `✖ Unknown command: /${cmd}  `,
-      React.createElement(Text, { color: '#6B7280' }, 'Type /help')
+      React.createElement(Text, { color: theme.TEXT_MUTED }, 'Type /help')
     ));
     return;
   }
 
   if (requirements && requirements.config && !context.config) {
-    context.push(React.createElement(Text, { color: '#EF4444' }, '✖ Config not found. Run /config first.'));
+    context.push(React.createElement(Text, { color: theme.ERROR }, '✖ Config not found. Run /config first.'));
     return;
   }
 
   if (requirements && requirements.repo && !context.repo) {
-    context.push(React.createElement(Text, { color: '#EF4444' }, '✖ Not a git repository'));
+    context.push(React.createElement(Text, { color: theme.ERROR }, '✖ Not a git repository'));
     return;
   }
 
@@ -334,7 +337,7 @@ async function runCommand(rawInput, context) {
   } catch (error) {
     context.setMode('idle');
     context.setActiveForm(null);
-    context.push(React.createElement(Text, { color: '#EF4444' }, `✖ ${error.message || 'Unexpected error'}`));
+    context.push(React.createElement(Text, { color: theme.ERROR }, `✖ ${error.message || 'Unexpected error'}`));
   }
 }
 

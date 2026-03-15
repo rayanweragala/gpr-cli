@@ -14,6 +14,7 @@ const {
   addAssignees,
   formatApiError
 } = require('../../lib/api');
+const theme = require('../theme');
 
 async function openCommand(_args, context) {
   const { config, repo, push, setMode, setActiveForm } = context;
@@ -28,7 +29,7 @@ async function openCommand(_args, context) {
     const branchNames = branchesData.map((branch) => branch.name);
 
     if (!branchNames.includes(repo.branch)) {
-      push(React.createElement(Text, { color: '#EF4444' }, `✖ Push your branch first: git push origin ${repo.branch}`));
+      push(React.createElement(Text, { color: theme.ERROR }, `✖ Push your branch first: git push origin ${repo.branch}`));
       setMode('idle');
       return;
     }
@@ -39,9 +40,9 @@ async function openCommand(_args, context) {
       push(React.createElement(
         Box,
         { flexDirection: 'column' },
-        React.createElement(Text, { color: '#10B981', bold: true }, `✔ PR already exists: #${existing.number}`),
-        React.createElement(Text, { color: '#F9FAFB' }, existing.title),
-        React.createElement(Text, { color: '#3B82F6' }, existing.html_url)
+        React.createElement(Text, { color: theme.SUCCESS, bold: true }, `✔ PR already exists: #${existing.number}`),
+        React.createElement(Text, { color: theme.TEXT_PRIMARY }, existing.title),
+        React.createElement(Text, { color: theme.INFO }, existing.html_url)
       ));
       setMode('idle');
       return;
@@ -87,15 +88,15 @@ async function openCommand(_args, context) {
           push(React.createElement(
             Box,
             { flexDirection: 'column' },
-            React.createElement(Text, { color: '#10B981', bold: true }, '✔ Pull Request Created!'),
+            React.createElement(Text, { color: theme.SUCCESS, bold: true }, '✔ Pull Request Created!'),
             line('Title', pr.title),
-            line('From', `${formData.head} → ${formData.base}`, '#3B82F6'),
-            line('Reviewers', formData.reviewers && formData.reviewers.length ? formData.reviewers.join(', ') : 'none assigned', '#F59E0B'),
-            line('Assignees', formData.assignees && formData.assignees.length ? formData.assignees.join(', ') : 'none assigned', '#10B981'),
-            line('URL', pr.html_url, '#3B82F6')
+            line('From', `${formData.head} → ${formData.base}`, theme.INFO),
+            line('Reviewers', formData.reviewers && formData.reviewers.length ? formData.reviewers.join(', ') : 'none assigned', theme.WARNING),
+            line('Assignees', formData.assignees && formData.assignees.length ? formData.assignees.join(', ') : 'none assigned', theme.SUCCESS),
+            line('URL', pr.html_url, theme.INFO)
           ));
         } catch (error) {
-          push(React.createElement(Text, { color: '#EF4444' }, `✖ ${formatApiError(error).message}`));
+          push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
         } finally {
           setMode('idle');
         }
@@ -103,11 +104,11 @@ async function openCommand(_args, context) {
       onCancel: () => {
         setActiveForm(null);
         setMode('idle');
-        push(React.createElement(Text, { color: '#6B7280' }, 'PR creation cancelled.'));
+        push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'PR creation cancelled.'));
       }
     }));
   } catch (error) {
-    push(React.createElement(Text, { color: '#EF4444' }, `✖ ${formatApiError(error).message}`));
+    push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
     setMode('idle');
   }
 }
@@ -133,7 +134,7 @@ function OpenForm(props) {
     return React.createElement(
       Box,
       { flexDirection: 'column' },
-      React.createElement(Text, { color: '#F9FAFB', bold: true }, 'Select the base branch'),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY, bold: true }, 'Select the base branch'),
       React.createElement(SelectInput, {
         items: props.branches.map((branch) => ({ label: branch, value: branch })),
         initialIndex: Math.max(0, props.branches.indexOf(selectedBase)),
@@ -153,8 +154,8 @@ function OpenForm(props) {
     return React.createElement(
       Box,
       { flexDirection: 'column' },
-      React.createElement(Text, { color: '#F9FAFB', bold: true }, 'Select reviewers'),
-      React.createElement(Text, { color: '#6B7280' }, '(optional — Enter to skip)'),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY, bold: true }, 'Select reviewers'),
+      React.createElement(Text, { color: theme.TEXT_MUTED }, '(optional — Enter to skip)'),
       React.createElement(MultiSelect, {
         items: props.members,
         selected: selectedReviewers,
@@ -178,8 +179,8 @@ function OpenForm(props) {
     return React.createElement(
       Box,
       { flexDirection: 'column' },
-      React.createElement(Text, { color: '#F9FAFB', bold: true }, 'Select assignees'),
-      React.createElement(Text, { color: '#6B7280' }, '(you are pre-selected)'),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY, bold: true }, 'Select assignees'),
+      React.createElement(Text, { color: theme.TEXT_MUTED }, '(you are pre-selected)'),
       React.createElement(MultiSelect, {
         items: props.members,
         selected: selectedAssignees,
@@ -211,8 +212,8 @@ function OpenForm(props) {
     return React.createElement(
       Box,
       { flexDirection: 'column' },
-      React.createElement(Text, { color: '#6B7280' }, 'No team members found, skipping reviewer assignment'),
-      React.createElement(Text, { color: '#F9FAFB' }, 'Press Enter to create the pull request'),
+      React.createElement(Text, { color: theme.TEXT_MUTED }, 'No team members found, skipping reviewer assignment'),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY }, 'Press Enter to create the pull request'),
       React.createElement(TextInput, {
         value: '',
         onChange: () => {},
@@ -231,7 +232,7 @@ function OpenForm(props) {
   return React.createElement(
     Box,
     { flexDirection: 'column' },
-    React.createElement(Text, { color: '#F9FAFB', bold: true }, step === 'title' ? 'PR title' : 'PR description (optional)'),
+    React.createElement(Text, { color: theme.TEXT_PRIMARY, bold: true }, step === 'title' ? 'PR title' : 'PR description (optional)'),
     React.createElement(TextInput, {
       value: step === 'title' ? title : body,
       onChange: step === 'title' ? setTitle : setBody,
@@ -269,10 +270,10 @@ function MultiSelect(props) {
     ...props.items.map((item, index) => React.createElement(
       Box,
       { key: item.login },
-      React.createElement(Text, { color: props.selected.includes(item.login) ? '#10B981' : '#6B7280' }, props.selected.includes(item.login) ? '◉ ' : '○ '),
+      React.createElement(Text, { color: props.selected.includes(item.login) ? theme.SUCCESS : theme.TEXT_MUTED }, props.selected.includes(item.login) ? '◉ ' : '○ '),
       React.createElement(Text, {
-        backgroundColor: index === cursor ? '#374151' : undefined,
-        color: index === cursor ? '#F9FAFB' : '#9CA3AF'
+        backgroundColor: index === cursor ? theme.SELECTED_BG : undefined,
+        color: index === cursor ? theme.SELECTED_TEXT : theme.TEXT_DIM
       }, item.login)
     )),
     React.createElement(
@@ -280,16 +281,16 @@ function MultiSelect(props) {
       { marginTop: 1 },
       React.createElement(
         Text,
-        { color: '#6B7280' },
-        React.createElement(Text, { color: '#F59E0B' }, 'Space'),
+        { color: theme.TEXT_MUTED },
+        React.createElement(Text, { color: theme.WARNING }, 'Space'),
         ' toggle  ',
-        React.createElement(Text, { color: '#F59E0B' }, 'Enter'),
+        React.createElement(Text, { color: theme.WARNING }, 'Enter'),
         ' confirm  ',
-        React.createElement(Text, { color: '#F59E0B' }, 'Esc'),
+        React.createElement(Text, { color: theme.WARNING }, 'Esc'),
         ' skip'
       )
     ),
-    props.hint ? React.createElement(Text, { color: '#6B7280', dimColor: true }, props.hint) : null
+    props.hint ? React.createElement(Text, { color: theme.TEXT_DIM, dimColor: true }, props.hint) : null
   );
 }
 
@@ -306,8 +307,8 @@ function line(label, value, color) {
   return React.createElement(
     Text,
     null,
-    React.createElement(Text, { color: '#6B7280' }, `${label.padEnd(5, ' ')} : `),
-    React.createElement(Text, { color: color || '#F9FAFB' }, value)
+    React.createElement(Text, { color: theme.TEXT_MUTED }, `${label.padEnd(5, ' ')} : `),
+    React.createElement(Text, { color: color || theme.TEXT_PRIMARY }, value)
   );
 }
 

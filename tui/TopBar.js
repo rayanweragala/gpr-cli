@@ -1,29 +1,30 @@
 const React = require('react');
 const { Box, Text } = require('ink');
 const Divider = require('./components/Divider');
+const theme = require('./theme');
 
 function TopBar(props) {
   const repo = props.repo;
 
   return React.createElement(
     Box,
-    { flexDirection: 'column', borderStyle: 'single', borderColor: '#374151', paddingX: 1 },
+    { flexDirection: 'column', borderStyle: 'single', borderColor: theme.BORDER, paddingX: 1 },
     React.createElement(
       Box,
       null,
-      React.createElement(Text, { color: '#7C3AED', bold: true }, 'GPR'),
-      React.createElement(Text, { color: '#6B7280' }, '  pull request shell')
+      React.createElement(Text, { color: theme.PRIMARY, bold: true }, 'GPR'),
+      React.createElement(Text, { color: theme.TEXT_MUTED }, '  pull request shell')
     ),
     repo
       ? React.createElement(
           Box,
           null,
-          React.createElement(Text, { color: '#6B7280' }, 'repo: '),
-          React.createElement(Text, { color: '#F9FAFB' }, `${repo.owner}/${repo.repo}`),
-          React.createElement(Text, { color: '#6B7280' }, '  branch: '),
-          React.createElement(Text, { color: '#3B82F6' }, repo.branch)
+          React.createElement(Text, { color: theme.TEXT_MUTED }, 'repo: '),
+          React.createElement(Text, { color: theme.TEXT_PRIMARY }, `${repo.owner}/${repo.repo}`),
+          React.createElement(Text, { color: theme.TEXT_MUTED }, '  branch: '),
+          React.createElement(Text, { color: theme.INFO }, repo.branch)
         )
-      : React.createElement(Text, { color: '#F59E0B' }, '⚠ Not in a git repo'),
+      : React.createElement(Text, { color: theme.WARNING }, '⚠ Not in a git repo'),
     React.createElement(Divider)
   );
 }

@@ -1,6 +1,7 @@
 const React = require('react');
 const { Box, Text, useInput } = require('ink');
 const TextInput = require('ink-text-input').default || require('ink-text-input');
+const theme = require('./theme');
 
 function InputBar(props) {
   useInput((input, key) => {
@@ -31,10 +32,10 @@ function InputBar(props) {
   });
 
   const borderColor = props.mode === 'loading'
-    ? '#6B7280'
+    ? theme.TEXT_MUTED
     : props.mode === 'form' || props.isPaused
-      ? '#F59E0B'
-      : '#7C3AED';
+      ? theme.WARNING
+      : theme.PRIMARY;
 
   const hint = props.mode === 'loading'
     ? 'loading...'
@@ -56,9 +57,9 @@ function InputBar(props) {
           focus: true,
           placeholder: 'Type /command  or  /help for list...'
         })
-      : React.createElement(Text, { color: '#6B7280' }, hint),
+      : React.createElement(Text, { color: theme.TEXT_MUTED }, hint),
     props.mode === 'loading'
-      ? React.createElement(Text, { color: '#F59E0B' }, ' ⠋')
+      ? React.createElement(Text, { color: theme.WARNING }, ' ⠋')
       : null
   );
 }

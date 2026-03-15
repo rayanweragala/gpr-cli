@@ -1,12 +1,13 @@
 const React = require('react');
 const { Box, Text } = require('ink');
 const { format } = require('timeago.js');
+const theme = require('../theme');
 
 function PRTable(props) {
   const pullRequests = Array.isArray(props.pullRequests) ? props.pullRequests : [];
 
   if (!pullRequests.length) {
-    return React.createElement(Text, { color: '#F59E0B' }, 'No open pull requests found.');
+    return React.createElement(Text, { color: theme.WARNING }, 'No open pull requests found.');
   }
 
   const cols = getColumns();
@@ -19,29 +20,29 @@ function PRTable(props) {
     React.createElement(
       Box,
       null,
-      cell('#', cols.num, '#7C3AED', true),
-      cell('Title', cols.title, '#7C3AED', true),
-      showAuthor ? cell('Author', cols.author, '#7C3AED', true) : null,
-      cell('Branch', cols.branch, '#7C3AED', true),
-      cell('Base', cols.base, '#7C3AED', true),
-      cell(props.showIdle ? 'Idle' : 'Age', cols.created, '#7C3AED', true),
-      showUrl ? cell('URL', cols.url, '#7C3AED', true) : null
+      cell('#', cols.num, theme.PRIMARY, true),
+      cell('Title', cols.title, theme.PRIMARY, true),
+      showAuthor ? cell('Author', cols.author, theme.PRIMARY, true) : null,
+      cell('Branch', cols.branch, theme.PRIMARY, true),
+      cell('Base', cols.base, theme.PRIMARY, true),
+      cell(props.showIdle ? 'Idle' : 'Age', cols.created, theme.PRIMARY, true),
+      showUrl ? cell('URL', cols.url, theme.PRIMARY, true) : null
     ),
-    React.createElement(Text, { color: '#374151' }, '─'.repeat(Math.max(20, totalWidth(cols, showAuthor, showUrl)))),
+    React.createElement(Text, { color: theme.BORDER_DIM }, '─'.repeat(Math.max(20, totalWidth(cols, showAuthor, showUrl)))),
     ...pullRequests.map((pullRequest) => React.createElement(
       Box,
       { key: pullRequest.number },
-      cell(String(pullRequest.number), cols.num, '#22D3EE', true),
-      cell(truncate(props.showIdle ? pullRequest.title : pullRequest.title, cols.title), cols.title, '#F9FAFB'),
-      showAuthor ? cell(truncate(pullRequest.user ? pullRequest.user.login : 'unknown', cols.author), cols.author, '#6B7280') : null,
-      cell(truncate(pullRequest.head ? pullRequest.head.ref : '', cols.branch), cols.branch, '#3B82F6'),
-      cell(truncate(pullRequest.base ? pullRequest.base.ref : '', cols.base), cols.base, '#10B981'),
+      cell(String(pullRequest.number), cols.num, theme.SECONDARY, true),
+      cell(truncate(props.showIdle ? pullRequest.title : pullRequest.title, cols.title), cols.title, theme.TEXT_PRIMARY),
+      showAuthor ? cell(truncate(pullRequest.user ? pullRequest.user.login : 'unknown', cols.author), cols.author, theme.TEXT_MUTED) : null,
+      cell(truncate(pullRequest.head ? pullRequest.head.ref : '', cols.branch), cols.branch, theme.INFO),
+      cell(truncate(pullRequest.base ? pullRequest.base.ref : '', cols.base), cols.base, theme.SUCCESS),
       cell(
         truncate(format(props.showIdle ? pullRequest.updated_at : pullRequest.created_at), cols.created),
         cols.created,
-        props.showIdle ? '#EF4444' : getAgeColor(props.showIdle ? pullRequest.updated_at : pullRequest.created_at)
+        props.showIdle ? theme.ERROR : getAgeColor(props.showIdle ? pullRequest.updated_at : pullRequest.created_at)
       ),
-      showUrl ? cell(truncate(`/${props.owner}/${props.repo}/pull/${pullRequest.number}`, cols.url), cols.url, '#22D3EE') : null
+      showUrl ? cell(truncate(`/${props.owner}/${props.repo}/pull/${pullRequest.number}`, cols.url), cols.url, theme.INFO) : null
     ))
   );
 }
@@ -85,12 +86,12 @@ function pad(value, width) {
 function getAgeColor(createdAt) {
   const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24));
   if (days < 7) {
-    return '#10B981';
+    return theme.SUCCESS;
   }
   if (days < 30) {
-    return '#F59E0B';
+    return theme.WARNING;
   }
-  return '#EF4444';
+  return theme.ERROR;
 }
 
 module.exports = PRTable;

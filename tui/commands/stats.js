@@ -7,6 +7,7 @@ const {
   listPullRequests,
   formatApiError
 } = require('../../lib/api');
+const theme = require('../theme');
 
 async function statsCommand(_args, context) {
   const { config, repo, push, setMode } = context;
@@ -32,15 +33,16 @@ async function statsCommand(_args, context) {
     push(React.createElement(
       Box,
       { flexDirection: 'column' },
-      React.createElement(Text, { color: '#F9FAFB' }, `Total PRs opened    : ${mine.length}`),
-      React.createElement(Text, { color: '#F59E0B' }, `Currently open      : ${open.length}`),
-      React.createElement(Text, { color: '#10B981' }, `Merged / Closed     : ${closed.length}`),
-      React.createElement(Text, { color: '#F9FAFB' }, `This month          : ${thisMonth.length}`),
-      React.createElement(Text, { color: '#EF4444' }, `Oldest open PR      : ${oldestOpen ? `PR #${oldestOpen.number} — ${oldestOpen.title} (${format(oldestOpen.created_at)})` : 'None'}`),
-      React.createElement(Text, { color: '#F9FAFB' }, `Most recent PR      : ${mostRecent ? `PR #${mostRecent.number} — ${mostRecent.title} (${format(mostRecent.created_at)})` : 'None'}`)
+      React.createElement(Text, { color: theme.PRIMARY, bold: true }, 'Your PR statistics'),
+      React.createElement(Text, { color: theme.TEXT_PRIMARY }, `Total PRs opened    : ${mine.length}`),
+      React.createElement(Text, { color: theme.WARNING }, `Currently open      : ${open.length}`),
+      React.createElement(Text, { color: theme.SUCCESS }, `Merged / Closed     : ${closed.length}`),
+      React.createElement(Text, { color: theme.TEXT_MUTED }, `This month          : ${thisMonth.length}`),
+      React.createElement(Text, { color: theme.ERROR }, `Oldest open PR      : ${oldestOpen ? `PR #${oldestOpen.number} — ${oldestOpen.title} (${format(oldestOpen.created_at)})` : 'None'}`),
+      React.createElement(Text, { color: theme.SUCCESS }, `Most recent PR      : ${mostRecent ? `PR #${mostRecent.number} — ${mostRecent.title} (${format(mostRecent.created_at)})` : 'None'}`)
     ));
   } catch (error) {
-    push(React.createElement(Text, { color: '#EF4444' }, `✖ ${formatApiError(error).message}`));
+    push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
   } finally {
     setMode('idle');
   }

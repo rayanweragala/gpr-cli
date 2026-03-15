@@ -2,6 +2,7 @@ const React = require('react');
 const { Box, Text } = require('ink');
 const { buildApi, listOpenPullRequests, formatApiError } = require('../../lib/api');
 const PRTable = require('../components/PRTable');
+const theme = require('../theme');
 
 async function watchCommand(_args, context) {
   context.push(React.createElement(WatchBlock, {
@@ -50,15 +51,15 @@ function WatchBlock(props) {
   return React.createElement(
     Box,
     { flexDirection: 'column', marginBottom: 1 },
-    React.createElement(Text, { color: '#7C3AED', bold: true }, `⟳ Live Watch — ${props.repo.owner}/${props.repo.repo}`),
+    React.createElement(Text, { color: theme.PRIMARY, bold: true }, `⟳ Live Watch — ${props.repo.owner}/${props.repo.repo}`),
     error
-      ? React.createElement(Text, { color: '#EF4444' }, `✖ ${error}`)
+      ? React.createElement(Text, { color: theme.ERROR }, `✖ ${error}`)
       : React.createElement(PRTable, {
           pullRequests,
           owner: props.repo.owner,
           repo: props.repo.repo
         }),
-    React.createElement(Text, { color: '#6B7280' }, `Updated: ${lastUpdate || 'loading...'}  |  Refreshing in ${tick}s  |  /watch again to add another`)
+    React.createElement(Text, { color: theme.TEXT_MUTED }, `Updated: ${lastUpdate || 'loading...'}  |  Refreshing in ${tick}s  |  /watch again to add another`)
   );
 }
 

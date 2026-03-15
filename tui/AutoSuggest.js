@@ -1,5 +1,6 @@
 const React = require('react');
 const { Box, Text, useInput } = require('ink');
+const theme = require('./theme');
 
 const COMMANDS = [
   { cmd: '/list', desc: 'List open pull requests' },
@@ -62,26 +63,26 @@ function AutoSuggest(props) {
 
   return React.createElement(
     Box,
-    { flexDirection: 'column', borderStyle: 'round', borderColor: '#374151', paddingY: 0 },
+    { flexDirection: 'column', borderStyle: 'round', borderColor: theme.BORDER_DIM, paddingY: 0 },
     React.createElement(
       Box,
       { paddingX: 1, marginBottom: 0 },
-      React.createElement(Text, { color: '#6B7280', dimColor: true }, '↑↓ navigate  Tab select  Esc close')
+      React.createElement(Text, { color: theme.TEXT_DIM, dimColor: true }, '↑↓ navigate  Tab select  Esc close')
     ),
     React.createElement(
       Box,
       { paddingX: 1 },
-      React.createElement(Text, { color: '#374151' }, '─'.repeat(40))
+      React.createElement(Text, { color: theme.BORDER_DIM }, '─'.repeat(40))
     ),
     ...filtered.map((item, index) => React.createElement(
       Box,
-      { key: item.cmd, paddingX: 1, backgroundColor: index === selectedIndex ? '#7C3AED' : undefined },
+      { key: item.cmd, paddingX: 1, backgroundColor: index === selectedIndex ? theme.SELECTED_BG : undefined },
       React.createElement(
         Box,
         { width: 16 },
-        React.createElement(Text, { color: index === selectedIndex ? '#FFFFFF' : '#F9FAFB', bold: true }, item.cmd)
+        React.createElement(Text, { color: index === selectedIndex ? theme.SELECTED_TEXT : theme.TEXT_PRIMARY, bold: true }, item.cmd)
       ),
-      React.createElement(Text, { color: index === selectedIndex ? '#E5E7EB' : '#6B7280' }, truncate(item.desc, descriptionWidth()))
+      React.createElement(Text, { color: index === selectedIndex ? theme.SELECTED_TEXT : theme.TEXT_MUTED }, truncate(item.desc, descriptionWidth()))
     ))
   );
 }

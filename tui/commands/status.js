@@ -6,6 +6,7 @@ const {
   formatApiError
 } = require('../../lib/api');
 const StatusBadge = require('../components/StatusBadge');
+const theme = require('../theme');
 
 async function statusCommand(_args, context) {
   const { config, repo, push, setMode } = context;
@@ -23,19 +24,19 @@ async function statusCommand(_args, context) {
       React.createElement(
         Text,
         null,
-        React.createElement(Text, { color: '#6B7280' }, 'Branch : '),
-        React.createElement(Text, { color: '#3B82F6' }, repo.branch)
+        React.createElement(Text, { color: theme.TEXT_MUTED }, 'Branch : '),
+        React.createElement(Text, { color: theme.INFO }, repo.branch)
       ),
       React.createElement(
         Box,
         null,
-        React.createElement(Text, { color: '#6B7280' }, 'PR     : '),
+        React.createElement(Text, { color: theme.TEXT_MUTED }, 'PR     : '),
         React.createElement(StatusBadge, { state }),
-        pullRequest ? React.createElement(Text, { color: '#F9FAFB' }, ` — ${pullRequest.html_url}`) : null
+        pullRequest ? React.createElement(Text, { color: theme.INFO }, ` — ${pullRequest.html_url}`) : null
       )
     ));
   } catch (error) {
-    push(React.createElement(Text, { color: '#EF4444' }, `✖ ${formatApiError(error).message}`));
+    push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
   } finally {
     setMode('idle');
   }
