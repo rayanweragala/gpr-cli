@@ -1,4 +1,5 @@
 const React = require('react');
+const { exec } = require('child_process');
 const { Box, Text, useApp, useInput } = require('ink');
 const TextInput = require('ink-text-input').default || require('ink-text-input');
 const SelectInput = require('ink-select-input').default || require('ink-select-input');
@@ -23,9 +24,14 @@ function OpenScreen(props) {
   const [selectedBase, setSelectedBase] = React.useState(null);
   const [error, setError] = React.useState(null);
   const [success, setSuccess] = React.useState(null);
+  const [existingPR, setExistingPR] = React.useState(null);
 
   useInput((input, key) => {
-    if (key.escape) {
+    if (existingPR && input === 'o') {
+      exec(`xdg-open "${existingPR.html_url}"`);
+    }
+
+    if ((existingPR && input === 'q') || key.escape) {
       exit();
     }
   });
@@ -47,13 +53,8 @@ function OpenScreen(props) {
         const existing = await findPullRequestByBranch(api, props.repo.owner, props.repo.repo, props.repo.branch);
 
         if (existing) {
-          setSuccess({
-            title: 'Pull Request Already Exists',
-            lines: [
-              { label: 'URL', value: existing.html_url }
-            ]
-          });
-          setStep('success');
+          setExistingPR(existing);
+          setStep('existing');
           return;
         }
 
@@ -84,6 +85,7 @@ function OpenScreen(props) {
         lines: [
           { label: 'Title', value: pullRequest.title },
           { label: 'From', value: `${props.repo.branch} → ${selectedBase}` },
+          { label: 'Author', value: pullRequest.user && pullRequest.user.login ? pullRequest.user.login : 'unknown' },
           { label: 'URL', value: pullRequest.html_url }
         ]
       });
@@ -98,6 +100,30 @@ function OpenScreen(props) {
     Box,
     { flexDirection: 'column' },
     React.createElement(Header, { title: 'Open Pull Request', repo: `${props.repo.owner}/${props.repo.repo}`, branch: props.repo.branch }),
+    step === 'existing' ? React.createElement(
+      Box,
+      { flexDirection: 'column' },
+      React.createElement(
+        Box,
+        { borderStyle: 'round', borderColor: '#10B981', marginTop: 1, paddingX: 1 },
+        React.createElement(Text, { color: '#10B981' }, '✔  PR Already Exists')
+      ),
+      React.createElement(
+        Box,
+        { marginTop: 1, flexDirection: 'column' },
+        React.createElement(AlignedLine, { label: 'PR', value: `#${existingPR.number} — ${existingPR.title}`, valueColor: '#F9FAFB' }),
+        React.createElement(AlignedLine, { label: 'URL', value: existingPR.html_url, valueColor: '#3B82F6' })
+      ),
+      React.createElement(
+        Box,
+        { marginTop: 1 },
+        React.createElement(Text, { color: '#6B7280' }, 'Press '),
+        React.createElement(Text, { color: '#F59E0B' }, 'o'),
+        React.createElement(Text, { color: '#6B7280' }, ' open in browser  |  '),
+        React.createElement(Text, { color: '#F59E0B' }, 'q'),
+        React.createElement(Text, { color: '#6B7280' }, ' quit')
+      )
+    ) : null,
     step === 'loading' ? React.createElement(Spinner, { text: 'Loading branch and PR data...' }) : null,
     step === 'title' ? React.createElement(Field, {
       label: 'Title',
@@ -127,8 +153,8 @@ function OpenScreen(props) {
     ) : null,
     step === 'submitting' ? React.createElement(Spinner, { text: 'Creating pull request...' }) : null,
     step === 'error' ? React.createElement(ErrorBox, { message: error }) : null,
-    step === 'success' ? React.createElement(SuccessBox, success) : null,
-    React.createElement(Text, { color: '#6B7280' }, 'Enter advance/select | Escape cancel')
+    step === 'success' ? React.createElement(CustomSuccessBox, success) : null,
+    step !== 'existing' ? React.createElement(Text, { color: '#6B7280' }, 'Enter advance/select | Escape cancel') : null
   );
 }
 
@@ -142,6 +168,38 @@ function Field(props) {
       onChange: props.onChange,
       onSubmit: props.onSubmit
     })
+  );
+}
+
+function AlignedLine(props) {
+  return React.createElement(
+    Box,
+    null,
+    React.createElement(
+      Box,
+      { width: 10 },
+      React.createElement(Text, { color: '#6B7280' }, props.label)
+    ),
+    React.createElement(Text, { color: '#6B7280' }, ' : '),
+    React.createElement(Text, { color: props.valueColor || '#F9FAFB' }, props.value)
+  );
+}
+
+function CustomSuccessBox(props) {
+  return React.createElement(
+    Box,
+    { flexDirection: 'column' },
+    React.createElement(
+      Box,
+      { borderStyle: 'double', borderColor: '#10B981', paddingX: 1, marginBottom: 1 },
+      React.createElement(Text, { color: '#10B981', bold: true }, `✔  ${props.title}`)
+    ),
+    ...props.lines.map((line) => React.createElement(AlignedLine, {
+      key: line.label,
+      label: line.label,
+      value: line.value,
+      valueColor: line.label === 'URL' ? '#3B82F6' : '#F9FAFB'
+    }))
   );
 }
 

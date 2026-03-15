@@ -12,7 +12,8 @@ function ListScreen(props) {
   const [pullRequests, setPullRequests] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
-  const [activeReview, setActiveReview] = React.useState(null);
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [reviewPR, setReviewPR] = React.useState(null);
   const api = React.useMemo(() => buildApi(props.config), [props.config]);
   const repoLabel = `${props.repo.owner}/${props.repo.repo}`;
 
@@ -23,6 +24,7 @@ function ListScreen(props) {
     try {
       const data = await listOpenPullRequests(api, props.repo.owner, props.repo.repo);
       setPullRequests(data);
+      setSelectedIndex(0);
     } catch (issue) {
       setError(formatApiError(issue).message);
     }
@@ -34,27 +36,38 @@ function ListScreen(props) {
     load();
   }, [load]);
 
-  useInput((input) => {
-    if (activeReview) {
+  useInput((input, key) => {
+    if (reviewPR) {
       return;
     }
 
-    if (input === 'q') {
-      exit();
+    if (key.upArrow) {
+      setSelectedIndex((index) => Math.max(0, index - 1));
+    }
+
+    if (key.downArrow) {
+      setSelectedIndex((index) => Math.min(Math.max(0, pullRequests.length - 1), index + 1));
+    }
+
+    if (key.return && pullRequests[selectedIndex]) {
+      setReviewPR(pullRequests[selectedIndex]);
     }
 
     if (input === 'r') {
       load();
     }
-  });
 
-  if (activeReview) {
+    if (input === 'q' || key.escape) {
+      exit();
+    }
+  }, { isActive: !loading });
+
+  if (reviewPR) {
     return React.createElement(ReviewScreen, {
       config: props.config,
       repo: props.repo,
-      prNumber: activeReview,
-      inline: true,
-      onBack: () => setActiveReview(null)
+      prNumber: reviewPR.number,
+      onBack: () => setReviewPR(null)
     });
   }
 
@@ -68,7 +81,7 @@ function ListScreen(props) {
       pullRequests,
       owner: props.repo.owner,
       repo: props.repo.repo,
-      onSelect: (pullRequest) => setActiveReview(pullRequest.number)
+      selectedIndex
     }) : null,
     React.createElement(
       Text,

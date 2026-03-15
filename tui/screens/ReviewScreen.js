@@ -23,8 +23,8 @@ function ReviewScreen(props) {
   const [scrollIndex, setScrollIndex] = React.useState(0);
 
   useInput((input, key) => {
-    if (input === 'q') {
-      if (props.inline && typeof props.onBack === 'function') {
+    if (input === 'q' || key.escape) {
+      if (typeof props.onBack === 'function') {
         props.onBack();
       } else {
         exit();
