@@ -1,0 +1,5 @@
+{
+  "name": "gpr-cli",
+  "version": "1.0.0",
+  "description": "A CLI tool to open and manage pull requests from your terminal."
+}
