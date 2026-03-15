@@ -93,6 +93,90 @@ Status checks:
 - closed pull request for the current branch if no open PR exists
 - no PR state if neither exists
 
+### `gpr diff`
+
+Shows a human-readable diff summary for the current branch against its PR base branch.
+
+Example:
+
+```bash
+cd ~/Documents/Synapse/Projects/dwesk-frontend
+gpr diff
+```
+
+### `gpr review [pr-number]`
+
+Shows full PR details including description, file counts, comments, and reviewer states.
+
+Examples:
+
+```bash
+gpr review
+gpr review 24
+```
+
+### `gpr checkout`
+
+Lets you pick an open PR and checks out its branch locally.
+
+Example:
+
+```bash
+gpr checkout
+```
+
+### `gpr merge [pr-number]`
+
+Merges an open PR from the terminal after confirmation.
+
+Examples:
+
+```bash
+gpr merge
+gpr merge 24
+```
+
+### `gpr mine`
+
+Shows your open pull requests across all org repos available to your account.
+
+Example:
+
+```bash
+gpr mine
+```
+
+### `gpr watch`
+
+Shows a live pull request dashboard for the current repository and refreshes every 30 seconds.
+
+Example:
+
+```bash
+gpr watch
+```
+
+### `gpr stale --days <n>`
+
+Shows open pull requests with no activity for more than `n` days.
+
+Examples:
+
+```bash
+gpr stale
+gpr stale --days 14
+```
+
+### `gpr stats`
+
+Shows your pull request statistics for the current repository.
+
+Example:
+
+```bash
+gpr stats
+```
+
 ## Configuration File
 
 The CLI stores configuration in:
@@ -180,6 +264,20 @@ Your current repository remote is not using the required GitBucket format. Run `
 
 ```bash
 https://repository-3.dxesk.cloud/git/OWNER/REPO.git
+```
+
+### Proxy or VPN issues
+
+If API commands fail until you re-run config, verify the proxy host is reachable from your machine:
+
+```bash
+getent hosts vpn.dwesk.cloud
+```
+
+Then update the saved configuration:
+
+```bash
+gpr config
 ```
 
 ### Not inside a git repository
