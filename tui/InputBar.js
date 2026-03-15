@@ -8,16 +8,8 @@ function InputBar(props) {
       return;
     }
 
-    if (key.tab) {
-      if (typeof props.onTab === 'function') {
-        props.onTab();
-      }
-      return;
-    }
-
     if (key.upArrow) {
-      if (props.showSuggest && typeof props.onSuggestUp === 'function') {
-        props.onSuggestUp();
+      if (props.showSuggest) {
         return;
       }
 
@@ -28,8 +20,7 @@ function InputBar(props) {
     }
 
     if (key.downArrow) {
-      if (props.showSuggest && typeof props.onSuggestDown === 'function') {
-        props.onSuggestDown();
+      if (props.showSuggest) {
         return;
       }
 
@@ -41,7 +32,7 @@ function InputBar(props) {
 
   const borderColor = props.mode === 'loading'
     ? '#6B7280'
-    : props.mode === 'form'
+    : props.mode === 'form' || props.isPaused
       ? '#F59E0B'
       : '#7C3AED';
 
@@ -49,13 +40,15 @@ function InputBar(props) {
     ? 'loading...'
     : props.mode === 'form'
       ? 'form active — Esc cancel'
+      : props.isPaused
+        ? 'list active — Tab return to input'
       : '';
 
   return React.createElement(
     Box,
     { borderStyle: 'round', borderColor, paddingX: 1 },
     React.createElement(Text, { color: borderColor, bold: true }, '❯ '),
-    props.mode === 'idle'
+    props.mode === 'idle' && !props.isPaused
       ? React.createElement(TextInput, {
           value: props.value,
           onChange: props.onChange,

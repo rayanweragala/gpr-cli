@@ -44,6 +44,7 @@ function App(props) {
   const nextId = React.useRef(0);
   const initialRun = React.useRef(false);
   const mountedRef = React.useRef(true);
+  const contextRef = React.useRef(null);
   const [history, setHistory] = React.useState(createInitialHistory(props.showWelcome !== false));
   const [input, setInput] = React.useState('');
   const [mode, setMode] = React.useState('idle');
@@ -52,11 +53,10 @@ function App(props) {
   const [cmdLogIndex, setCmdLogIndex] = React.useState(-1);
   const [showSuggest, setShowSuggest] = React.useState(false);
   const [suggestIndex, setSuggestIndex] = React.useState(0);
+  const [inputPaused, setInputPaused] = React.useState(false);
   const [config, setConfig] = React.useState(props.config || null);
   const [repo, setRepo] = React.useState(props.repo || null);
   const [initialDone, setInitialDone] = React.useState(false);
-
-  const suggestions = React.useMemo(() => AutoSuggest.filterCommands(input).slice(0, 6), [input]);
 
   const push = React.useCallback((element) => {
     const key = `entry-${nextId.current++}`;
@@ -127,6 +127,7 @@ function App(props) {
       clearHistory();
       setInput('');
       setShowSuggest(false);
+      setInputPaused(false);
       return;
     }
 
@@ -139,6 +140,11 @@ function App(props) {
     push(React.createElement(Text, { color: '#7C3AED' }, `❯ ${command}`));
     setCmdLog((items) => [...items.slice(-49), command]);
     setCmdLogIndex(-1);
+  }
+
+  async function executeCommand(command, providedContext) {
+    const ctx = providedContext || contextRef.current;
+    await runCommand(command, ctx);
   }
 
   async function handleSubmit(value) {
@@ -162,35 +168,13 @@ function App(props) {
     }
 
     pushCommand(trimmed);
-
-    await runCommand(trimmed, {
-      config,
-      repo,
-      push,
-      setMode,
-      setActiveForm,
-      clearHistory,
-      exit,
-      refreshContext,
-      setConfig,
-      setRepo
-    });
+    await executeCommand(trimmed);
   }
 
   function onChange(value) {
     setInput(value);
-    setShowSuggest(mode === 'idle' && value.startsWith('/'));
+    setShowSuggest(mode === 'idle' && value.startsWith('/') && value.trim().length > 0);
     setSuggestIndex(0);
-  }
-
-  function fillSuggestion() {
-    if (!showSuggest || !suggestions.length) {
-      return;
-    }
-
-    const selected = suggestions[Math.max(0, Math.min(suggestIndex, suggestions.length - 1))];
-    setInput(`${selected.cmd} `);
-    setShowSuggest(false);
   }
 
   function onUpArrow() {
@@ -217,6 +201,23 @@ function App(props) {
     setShowSuggest(false);
   }
 
+  const context = {
+    config,
+    repo,
+    push,
+    setMode,
+    setActiveForm,
+      clearHistory,
+      exit,
+      refreshContext,
+      setConfig,
+      setRepo,
+      setInputPaused,
+      pushCommand,
+      runCommand: (command, providedContext) => executeCommand(command, providedContext || context)
+  };
+  contextRef.current = context;
+
   return React.createElement(
     Box,
     { flexDirection: 'column', height: process.stdout.rows || 40 },
@@ -226,18 +227,31 @@ function App(props) {
       { flexGrow: 1, flexDirection: 'column', overflowY: 'hidden' },
       React.createElement(ContentArea, { history, activeForm })
     ),
-    showSuggest ? React.createElement(AutoSuggest, { query: input, selectedIndex: suggestIndex }) : null,
+    React.createElement(AutoSuggest, {
+      visible: showSuggest,
+      query: input,
+      selectedIndex: suggestIndex,
+      onMoveUp: (count) => setSuggestIndex((index) => (index <= 0 ? count - 1 : index - 1)),
+      onMoveDown: (count) => setSuggestIndex((index) => (index >= count - 1 ? 0 : index + 1)),
+      onSelect: (command) => {
+        setInput(`${command} `);
+        setShowSuggest(false);
+        setSuggestIndex(0);
+      },
+      onClose: () => {
+        setShowSuggest(false);
+        setSuggestIndex(0);
+      }
+    }),
     React.createElement(InputBar, {
       value: input,
       onChange,
       onSubmit: handleSubmit,
       onUpArrow,
       onDownArrow,
-      onSuggestUp: () => setSuggestIndex((index) => Math.max(0, index - 1)),
-      onSuggestDown: () => setSuggestIndex((index) => Math.min(Math.max(0, suggestions.length - 1), index + 1)),
-      onTab: fillSuggestion,
       showSuggest,
-      mode
+      mode,
+      isPaused: inputPaused
     })
   );
 }
