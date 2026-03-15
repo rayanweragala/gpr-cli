@@ -13,9 +13,13 @@ function MergeScreen(props) {
   const [selected, setSelected] = React.useState(props.prNumber ? Number(props.prNumber) : null);
   const [state, setState] = React.useState({ loading: true, error: null, pullRequests: [], pullRequest: null, success: null, phase: 'select', answer: '' });
 
-  useInput((input) => {
-    if (input === 'q') {
-      exit();
+  useInput((input, key) => {
+    if (input === 'q' || key.escape) {
+      if (typeof props.onBack === 'function') {
+        props.onBack();
+      } else {
+        exit();
+      }
     }
   });
 
@@ -76,7 +80,11 @@ function MergeScreen(props) {
             return;
           }
 
-          exit();
+          if (typeof props.onBack === 'function') {
+            props.onBack();
+          } else {
+            exit();
+          }
         }
       })
     ) : null,

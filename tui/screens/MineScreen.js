@@ -19,7 +19,11 @@ function MineScreen(props) {
 
   useInput((input) => {
     if (input === 'q') {
-      exit();
+      if (typeof props.onBack === 'function') {
+        props.onBack();
+      } else {
+        exit();
+      }
     }
   });
 

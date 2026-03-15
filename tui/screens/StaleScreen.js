@@ -12,9 +12,13 @@ function StaleScreen(props) {
   const [state, setState] = React.useState({ loading: true, error: null, stale: [] });
   const days = Number(props.days || 7);
 
-  useInput((input) => {
-    if (input === 'q') {
-      exit();
+  useInput((input, key) => {
+    if (input === 'q' || key.escape) {
+      if (typeof props.onBack === 'function') {
+        props.onBack();
+      } else {
+        exit();
+      }
     }
   });
 

@@ -1,5 +1,5 @@
 const React = require('react');
-const { Box, Text, useApp } = require('ink');
+const { Box, Text, useApp, useInput } = require('ink');
 const { format } = require('timeago.js');
 const { buildApi, getAuthenticatedUser, listPullRequests, formatApiError } = require('../../lib/api');
 const Header = require('../components/Header');
@@ -9,6 +9,17 @@ const ErrorBox = require('../components/ErrorBox');
 function StatsScreen(props) {
   const { exit } = useApp();
   const [state, setState] = React.useState({ loading: true, error: null, stats: null });
+  const embedded = typeof props.onBack === 'function';
+
+  useInput((input, key) => {
+    if (!embedded) {
+      return;
+    }
+
+    if (input === 'q' || key.escape) {
+      props.onBack();
+    }
+  });
 
   React.useEffect(() => {
     const api = buildApi(props.config);
@@ -40,9 +51,11 @@ function StatsScreen(props) {
         setState({ loading: false, error: formatApiError(error).message, stats: null });
       }
 
-      setTimeout(exit, 0);
+      if (!embedded) {
+        setTimeout(exit, 0);
+      }
     })();
-  }, [exit, props.config, props.repo.owner, props.repo.repo]);
+  }, [embedded, exit, props.config, props.repo.owner, props.repo.repo]);
 
   return React.createElement(
     Box,
@@ -59,7 +72,8 @@ function StatsScreen(props) {
       React.createElement(Text, { color: '#F9FAFB' }, `This month          : ${state.stats.thisMonth.length}`),
       React.createElement(Text, { color: '#EF4444' }, `Oldest open PR      : ${state.stats.oldestOpen ? `PR #${state.stats.oldestOpen.number} — ${state.stats.oldestOpen.title} (${format(state.stats.oldestOpen.created_at)})` : 'None'}`),
       React.createElement(Text, { color: '#F9FAFB' }, `Most recent PR      : ${state.stats.mostRecent ? `PR #${state.stats.mostRecent.number} — ${state.stats.mostRecent.title} (${format(state.stats.mostRecent.created_at)})` : 'None'}`)
-    ) : null
+    ) : null,
+    embedded ? React.createElement(Text, { color: '#6B7280' }, 'q back') : null
   );
 }
 

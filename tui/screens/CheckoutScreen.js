@@ -12,9 +12,13 @@ function CheckoutScreen(props) {
   const { exit } = useApp();
   const [state, setState] = React.useState({ loading: true, error: null, pullRequests: [], success: null });
 
-  useInput((input) => {
-    if (input === 'q') {
-      exit();
+  useInput((input, key) => {
+    if (input === 'q' || key.escape) {
+      if (typeof props.onBack === 'function') {
+        props.onBack();
+      } else {
+        exit();
+      }
     }
   });
 

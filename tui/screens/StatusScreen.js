@@ -1,5 +1,5 @@
 const React = require('react');
-const { Box, Text, useApp } = require('ink');
+const { Box, Text, useApp, useInput } = require('ink');
 const { buildApi, findPullRequestByBranchWithState, formatApiError } = require('../../lib/api');
 const Header = require('../components/Header');
 const Spinner = require('../components/Spinner');
@@ -9,6 +9,17 @@ const StatusBadge = require('../components/StatusBadge');
 function StatusScreen(props) {
   const { exit } = useApp();
   const [state, setState] = React.useState({ loading: true, error: null, pullRequest: null, status: 'none' });
+  const embedded = typeof props.onBack === 'function';
+
+  useInput((input, key) => {
+    if (!embedded) {
+      return;
+    }
+
+    if (input === 'q' || key.escape) {
+      props.onBack();
+    }
+  });
 
   React.useEffect(() => {
     const api = buildApi(props.config);
@@ -19,7 +30,9 @@ function StatusScreen(props) {
 
         if (open) {
           setState({ loading: false, error: null, pullRequest: open, status: open.merged_at ? 'merged' : 'open' });
-          setTimeout(exit, 0);
+          if (!embedded) {
+            setTimeout(exit, 0);
+          }
           return;
         }
 
@@ -29,9 +42,11 @@ function StatusScreen(props) {
         setState({ loading: false, error: formatApiError(error).message, pullRequest: null, status: 'none' });
       }
 
-      setTimeout(exit, 0);
+      if (!embedded) {
+        setTimeout(exit, 0);
+      }
     })();
-  }, [exit, props.config, props.repo.branch, props.repo.owner, props.repo.repo]);
+  }, [embedded, exit, props.config, props.repo.branch, props.repo.owner, props.repo.repo]);
 
   return React.createElement(
     Box,
@@ -55,7 +70,8 @@ function StatusScreen(props) {
         React.createElement(StatusBadge, { state: state.status }),
         state.pullRequest ? React.createElement(Text, { color: '#F9FAFB' }, ` — ${state.pullRequest.html_url}`) : null
       )
-    ) : null
+    ) : null,
+    embedded ? React.createElement(Text, { color: '#6B7280' }, 'q back') : null
   );
 }
 

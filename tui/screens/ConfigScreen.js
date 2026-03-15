@@ -22,8 +22,12 @@ function ConfigScreen(props) {
   const configPath = path.join(os.homedir(), '.gpr-config.json');
 
   useInput((input, key) => {
-    if (key.escape) {
-      exit();
+    if (key.escape || input === 'q') {
+      if (typeof props.onBack === 'function') {
+        props.onBack();
+      } else {
+        exit();
+      }
     }
   });
 
@@ -59,7 +63,7 @@ function ConfigScreen(props) {
     step === 'saving' ? React.createElement(Spinner, { text: 'Saving config and testing connection...' }) : null,
     step === 'error' ? React.createElement(ErrorBox, { message: error }) : null,
     saved ? React.createElement(SuccessBox, { title: 'Connection successful', lines: [{ label: 'Config', value: configPath }] }) : null,
-    React.createElement(Text, { color: '#6B7280' }, 'Tab/Enter next | Escape cancel')
+    React.createElement(Text, { color: '#6B7280' }, saved ? 'q back | Escape cancel' : 'Tab/Enter next | Escape cancel')
   );
 }
 

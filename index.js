@@ -2,6 +2,8 @@
 
 const { Command } = require('commander');
 const chalk = require('chalk');
+const React = require('react');
+const { render } = require('ink');
 const openCommand = require('./commands/open');
 const listCommand = require('./commands/list');
 const statusCommand = require('./commands/status');
@@ -14,6 +16,7 @@ const mineCommand = require('./commands/mine');
 const watchCommand = require('./commands/watch');
 const staleCommand = require('./commands/stale');
 const statsCommand = require('./commands/stats');
+const AppShell = require('./tui/AppShell');
 
 const program = new Command();
 
@@ -83,7 +86,17 @@ program
   .description('Show your pull request statistics for the current repo')
   .action(run(statsCommand));
 
-program.parseAsync(process.argv);
+main();
+
+async function main() {
+  if (process.argv.slice(2).length === 0) {
+    const app = render(React.createElement(AppShell));
+    await app.waitUntilExit();
+    return;
+  }
+
+  await program.parseAsync(process.argv);
+}
 
 function run(command) {
   return async (...args) => {

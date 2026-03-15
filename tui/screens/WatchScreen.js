@@ -29,9 +29,13 @@ function WatchScreen(props) {
     setCountdown(30);
   }, [props.config, props.repo.owner, props.repo.repo]);
 
-  useInput((input) => {
-    if (input === 'q') {
-      exit();
+  useInput((input, key) => {
+    if (input === 'q' || key.escape) {
+      if (typeof props.onBack === 'function') {
+        props.onBack();
+      } else {
+        exit();
+      }
     }
 
     if (input === 'r') {

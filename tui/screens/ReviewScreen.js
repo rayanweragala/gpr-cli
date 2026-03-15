@@ -39,7 +39,7 @@ function ReviewScreen(props) {
       const lines = descriptionLines(state.pullRequest);
       setScrollIndex((value) => Math.min(Math.max(0, lines.length - 4), value + 1));
     }
-  });
+  }, { isActive: true });
 
   React.useEffect(() => {
     const api = buildApi(props.config);

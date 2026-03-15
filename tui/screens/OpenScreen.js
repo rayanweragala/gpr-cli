@@ -26,13 +26,22 @@ function OpenScreen(props) {
   const [success, setSuccess] = React.useState(null);
   const [existingPR, setExistingPR] = React.useState(null);
 
+  function leave() {
+    if (typeof props.onBack === 'function') {
+      props.onBack();
+      return;
+    }
+
+    exit();
+  }
+
   useInput((input, key) => {
     if (existingPR && input === 'o') {
       exec(`xdg-open "${existingPR.html_url}"`);
     }
 
-    if ((existingPR && input === 'q') || key.escape) {
-      exit();
+    if (input === 'q' || key.escape) {
+      leave();
     }
   });
 
@@ -154,7 +163,8 @@ function OpenScreen(props) {
     step === 'submitting' ? React.createElement(Spinner, { text: 'Creating pull request...' }) : null,
     step === 'error' ? React.createElement(ErrorBox, { message: error }) : null,
     step === 'success' ? React.createElement(CustomSuccessBox, success) : null,
-    step !== 'existing' ? React.createElement(Text, { color: '#6B7280' }, 'Enter advance/select | Escape cancel') : null
+    step !== 'existing' ? React.createElement(Text, { color: '#6B7280' }, 'Enter advance/select | Escape cancel') : null,
+    (step === 'success' || step === 'error') ? React.createElement(Text, { color: '#6B7280' }, 'q back | Escape cancel') : null
   );
 }
 

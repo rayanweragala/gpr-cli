@@ -58,7 +58,11 @@ function ListScreen(props) {
     }
 
     if (input === 'q' || key.escape) {
-      exit();
+      if (typeof props.onBack === 'function') {
+        props.onBack();
+      } else {
+        exit();
+      }
     }
   }, { isActive: !loading });
 

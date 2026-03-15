@@ -1,5 +1,5 @@
 const React = require('react');
-const { Box, Text, useApp } = require('ink');
+const { Box, Text, useApp, useInput } = require('ink');
 const { buildApi, findPullRequestByBranch, listBranches, formatApiError } = require('../../lib/api');
 const { getDiffSummary } = require('../../lib/git');
 const Header = require('../components/Header');
@@ -9,6 +9,17 @@ const ErrorBox = require('../components/ErrorBox');
 function DiffScreen(props) {
   const { exit } = useApp();
   const [state, setState] = React.useState({ loading: true, error: null, diff: null, base: 'main' });
+  const embedded = typeof props.onBack === 'function';
+
+  useInput((input, key) => {
+    if (!embedded) {
+      return;
+    }
+
+    if (input === 'q' || key.escape) {
+      props.onBack();
+    }
+  });
 
   React.useEffect(() => {
     const api = buildApi(props.config);
@@ -35,9 +46,11 @@ function DiffScreen(props) {
         setState({ loading: false, error: issue.message, diff: null, base: baseBranch });
       }
 
-      setTimeout(exit, 0);
+      if (!embedded) {
+        setTimeout(exit, 0);
+      }
     })();
-  }, [exit, props.config, props.repo.branch, props.repo.owner, props.repo.repo]);
+  }, [embedded, exit, props.config, props.repo.branch, props.repo.owner, props.repo.repo]);
 
   return React.createElement(
     Box,
@@ -54,7 +67,8 @@ function DiffScreen(props) {
       : null,
     !state.loading && !state.error && state.diff && state.diff.summary.filesChanged > 0
       ? React.createElement(DiffBody, { diff: state.diff })
-      : null
+      : null,
+    embedded ? React.createElement(Text, { color: '#6B7280' }, 'q back') : null
   );
 }
 
