@@ -1,20 +1,19 @@
 const React = require('react');
 const { Box, Text, useInput } = require('ink');
 const TextInput = require('ink-text-input').default || require('ink-text-input');
-const SelectInput = require('ink-select-input').default || require('ink-select-input');
 const {
   buildApi,
   findPullRequestByBranch,
   createPullRequest,
   listBranches,
   getAuthenticatedUser,
-  getRepoCollaborators,
-  getOrgMembers,
-  requestReviewers,
   addAssignees,
   formatApiError
 } = require('../../lib/api');
 const theme = require('../theme');
+
+const TOTAL_STEPS = 3;
+const PANEL_WIDTH = 50;
 
 async function openCommand(_args, context) {
   const { config, repo, push, setMode, setActiveForm, dismissForm } = context;
@@ -39,92 +38,46 @@ async function openCommand(_args, context) {
     if (existing) {
       push(React.createElement(
         Box,
-        { flexDirection: 'column' },
+        { flexDirection: 'column', marginY: 1 },
         React.createElement(Text, { color: theme.SUCCESS, bold: true }, '✔ PR Already Exists'),
-        React.createElement(
-          Box,
-          { marginTop: 1 },
-          React.createElement(
-            Box,
-            { width: 14 },
-            React.createElement(Text, { color: theme.TEXT_MUTED }, 'PR')
-          ),
-          React.createElement(Text, { color: theme.TEXT_MUTED }, ' : '),
-          React.createElement(Text, { color: theme.TEXT_PRIMARY }, `#${existing.number} — ${existing.title}`)
-        ),
-        React.createElement(
-          Box,
-          null,
-          React.createElement(
-            Box,
-            { width: 14 },
-            React.createElement(Text, { color: theme.TEXT_MUTED }, 'URL')
-          ),
-          React.createElement(Text, { color: theme.TEXT_MUTED }, ' : '),
-          React.createElement(Text, { color: theme.INFO }, existing.html_url)
-        ),
-        React.createElement(
-          Box,
-          { marginTop: 1 },
-          React.createElement(
-            Text,
-            { color: theme.TEXT_DIM },
-            'Press ',
-            React.createElement(Text, { color: theme.WARNING }, 'q'),
-            ' to continue'
-          )
-        )
+        detailLine('PR', `#${existing.number}`, theme.SECONDARY, 10),
+        detailLine('Title', existing.title, theme.TEXT_PRIMARY, 10),
+        detailLine('URL', existing.html_url, theme.INFO, 10)
       ));
       setMode('idle');
       return;
-    }
-
-    const defaultBase = branchNames.includes('main')
-      ? 'main'
-      : branchNames.includes('master')
-        ? 'master'
-        : branchNames[0];
-
-    let members = await getRepoCollaborators(api, repo.owner, repo.repo);
-    if (!members.length) {
-      members = await getOrgMembers(api, repo.owner);
     }
 
     setMode('form');
     setActiveForm(React.createElement(OpenForm, {
       repo,
       branches: branchNames,
-      defaultBase,
-      members,
-      currentUser,
+      currentUser: currentUser && currentUser.login ? currentUser.login : 'unknown',
       onSubmit: async (formData) => {
         dismissForm();
         setMode('loading');
+
         try {
           const pr = await createPullRequest(api, repo.owner, repo.repo, {
             title: formData.title,
             body: formData.body,
-            head: repo.branch,
+            head: formData.head,
             base: formData.base
           });
 
-          if (formData.reviewers && formData.reviewers.length) {
-            await requestReviewers(api, repo.owner, repo.repo, pr.number, formData.reviewers);
-          }
-
           if (formData.assignees && formData.assignees.length) {
-            await addAssignees(api, repo.owner, repo.repo, pr.number, formData.assignees);
+            await addAssignees(api, repo.owner, repo.repo, pr.number, formData.assignees).catch(() => null);
           }
 
           push(React.createElement(
             Box,
-            { flexDirection: 'column' },
+            { flexDirection: 'column', marginY: 1 },
             React.createElement(Text, { color: theme.SUCCESS, bold: true }, '✔ Pull Request Created!'),
-            line('Title', pr.title),
-            line('From', `${formData.head} → ${formData.base}`, theme.INFO),
-            line('Reviewers', formData.reviewers && formData.reviewers.length ? formData.reviewers.join(', ') : 'none assigned', theme.WARNING),
-            line('Assignees', formData.assignees && formData.assignees.length ? formData.assignees.join(', ') : 'none assigned', theme.SUCCESS),
-            line('URL', pr.html_url, theme.INFO)
+            detailLine('PR', `#${pr.number}`, theme.SECONDARY, 10),
+            detailLine('Title', pr.title, theme.TEXT_PRIMARY, 10),
+            detailLine('From', `${formData.head} → ${formData.base}`, theme.INFO, 10),
+            detailLine('Assignee', formData.assignees && formData.assignees.length ? formData.assignees.join(', ') : 'none', theme.WARNING, 10),
+            detailLine('URL', pr.html_url, theme.INFO, 10)
           ));
         } catch (error) {
           push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
@@ -143,203 +96,308 @@ async function openCommand(_args, context) {
   }
 }
 
-function OpenForm(props) {
-  const [step, setStep] = React.useState('title');
-  const [title, setTitle] = React.useState(prettyBranch(props.repo.branch));
-  const [body, setBody] = React.useState('');
-  const [selectedBase, setSelectedBase] = React.useState(props.defaultBase);
-  const [selectedReviewers, setSelectedReviewers] = React.useState([]);
-  const [selectedAssignees, setSelectedAssignees] = React.useState(
-    props.currentUser && props.currentUser.login ? [props.currentUser.login] : []
+function OpenForm({ repo, branches, currentUser, onSubmit, onCancel }) {
+  const [step, setStep] = React.useState(1);
+  const [title, setTitle] = React.useState(prettifyBranch(repo.branch));
+  const [description, setDescription] = React.useState('');
+  const [baseBranch, setBaseBranch] = React.useState(
+    branches.includes('main')
+      ? 'main'
+      : branches.includes('master')
+        ? 'master'
+        : branches[0] || 'main'
   );
-  const hasMembers = Array.isArray(props.members) && props.members.length > 0;
+  const [branchCursor, setBranchCursor] = React.useState(
+    Math.max(0, branches.indexOf(
+      branches.includes('main')
+        ? 'main'
+        : branches.includes('master')
+          ? 'master'
+          : branches[0] || 'main'
+    ))
+  );
 
   useInput((input, key) => {
-    if ((step === 'title' || step === 'body' || step === 'base' || step === 'submit') && key.escape && typeof props.onCancel === 'function') {
-      props.onCancel();
+    if (!key.escape) {
+      return;
+    }
+
+    if (step === 1) {
+      onCancel();
+      return;
+    }
+
+    if (step === 2) {
+      setStep(1);
+      return;
+    }
+
+    if (step === 3) {
+      setStep(2);
+      return;
+    }
+
+    if (step === 4) {
+      setStep(3);
     }
   });
 
-  if (step === 'base') {
+  if (step === 1) {
     return React.createElement(
-      Box,
-      { flexDirection: 'column' },
-      React.createElement(Text, { color: theme.TEXT_PRIMARY, bold: true }, 'Select the base branch'),
-      React.createElement(SelectInput, {
-        items: props.branches.map((branch) => ({ label: branch, value: branch })),
-        initialIndex: Math.max(0, props.branches.indexOf(selectedBase)),
-        onSelect: (item) => {
-          setSelectedBase(item.value);
-          if (!hasMembers) {
-            setStep('submit');
-            return;
-          }
-          setStep('reviewers');
-        }
-      })
+      FormPanel,
+      {
+        title: 'Create Pull Request',
+        subtitle: `(Step 1 of ${TOTAL_STEPS})`,
+        branchLine: `${repo.branch} → ?`,
+        hint: hintLine('Enter', 'continue', 'Esc', 'cancel')
+      },
+      React.createElement(
+        Box,
+        { flexDirection: 'column', marginTop: 1 },
+        React.createElement(Text, { color: theme.TEXT_MUTED }, 'PR Title'),
+        React.createElement(
+          Box,
+          { borderStyle: 'round', borderColor: theme.SECONDARY, paddingX: 1, marginTop: 0 },
+          React.createElement(TextInput, {
+            value: title,
+            onChange: setTitle,
+            onSubmit: (value) => {
+              const nextTitle = String(value || '').trim();
+              if (nextTitle) {
+                setTitle(nextTitle);
+                setStep(2);
+              }
+            },
+            focus: true
+          })
+        )
+      )
     );
   }
 
-  if (step === 'reviewers') {
+  if (step === 2) {
     return React.createElement(
-      Box,
-      { flexDirection: 'column' },
-      React.createElement(Text, { color: theme.TEXT_PRIMARY, bold: true }, 'Select reviewers'),
-      React.createElement(Text, { color: theme.TEXT_MUTED }, '(optional — Enter to skip)'),
-      React.createElement(MultiSelect, {
-        items: props.members,
-        selected: selectedReviewers,
-        hint: 'optional — Enter to skip',
-        onToggle: (login) => {
-          setSelectedReviewers((items) => items.includes(login) ? items.filter((item) => item !== login) : [...items, login]);
-        },
-        onConfirm: (selected) => {
-          setSelectedReviewers(selected);
-          setStep('assignees');
-        },
-        onSkip: () => {
-          setSelectedReviewers([]);
-          setStep('assignees');
-        }
-      })
+      FormPanel,
+      {
+        title: 'Create Pull Request',
+        subtitle: `(Step 2 of ${TOTAL_STEPS})`,
+        branchLine: `${repo.branch} → ?`,
+        hint: hintLine('Enter', 'continue', 'Esc', 'go back')
+      },
+      React.createElement(
+        Box,
+        { flexDirection: 'column', marginTop: 1 },
+        React.createElement(
+          Box,
+          { flexDirection: 'row' },
+          React.createElement(Text, { color: theme.TEXT_MUTED }, 'PR Description'),
+          React.createElement(Text, { color: theme.TEXT_DIM }, '  (optional)')
+        ),
+        React.createElement(
+          Box,
+          { borderStyle: 'round', borderColor: theme.BORDER_DIM, paddingX: 1, marginTop: 0 },
+          React.createElement(TextInput, {
+            value: description,
+            onChange: setDescription,
+            onSubmit: (value) => {
+              setDescription(String(value || '').trim());
+              setStep(3);
+            },
+            placeholder: 'What does this PR do?',
+            focus: true
+          })
+        )
+      )
     );
   }
 
-  if (step === 'assignees') {
-    return React.createElement(
-      Box,
-      { flexDirection: 'column' },
-      React.createElement(Text, { color: theme.TEXT_PRIMARY, bold: true }, 'Select assignees'),
-      React.createElement(Text, { color: theme.TEXT_MUTED }, '(you are pre-selected)'),
-      React.createElement(MultiSelect, {
-        items: props.members,
-        selected: selectedAssignees,
-        hint: 'you are pre-selected',
-        onToggle: (login) => {
-          setSelectedAssignees((items) => items.includes(login) ? items.filter((item) => item !== login) : [...items, login]);
-        },
-        onConfirm: (selected) => props.onSubmit({
-          title: title.trim(),
-          body: body.trim(),
-          head: props.repo.branch,
-          base: selectedBase,
-          reviewers: selectedReviewers,
-          assignees: selected
-        }),
-        onSkip: () => props.onSubmit({
-          title: title.trim(),
-          body: body.trim(),
-          head: props.repo.branch,
-          base: selectedBase,
-          reviewers: selectedReviewers,
-          assignees: []
-        })
-      })
-    );
+  if (step === 3) {
+    return React.createElement(BranchPickerStep, {
+      repo,
+      branches,
+      cursor: branchCursor,
+      setCursor: setBranchCursor,
+      onSelect: (branch) => {
+        setBaseBranch(branch);
+        setStep(4);
+      }
+    });
   }
 
-  if (step === 'submit') {
-    return React.createElement(
-      Box,
-      { flexDirection: 'column' },
-      React.createElement(Text, { color: theme.TEXT_MUTED }, 'No team members found, skipping reviewer assignment'),
-      React.createElement(Text, { color: theme.TEXT_PRIMARY }, 'Press Enter to create the pull request'),
-      React.createElement(TextInput, {
-        value: '',
-        onChange: () => {},
-        onSubmit: () => props.onSubmit({
-          title: title.trim(),
-          body: body.trim(),
-          head: props.repo.branch,
-          base: selectedBase,
-          reviewers: [],
-          assignees: selectedAssignees
-        })
-      })
-    );
-  }
-
-  return React.createElement(
-    Box,
-    { flexDirection: 'column' },
-    React.createElement(Text, { color: theme.TEXT_PRIMARY, bold: true }, step === 'title' ? 'PR title' : 'PR description (optional)'),
-    React.createElement(TextInput, {
-      value: step === 'title' ? title : body,
-      onChange: step === 'title' ? setTitle : setBody,
-      onSubmit: () => setStep(step === 'title' ? 'body' : 'base')
+  return React.createElement(ConfirmStep, {
+    repo,
+    title,
+    description,
+    baseBranch,
+    currentUser,
+    onSubmit: () => onSubmit({
+      title,
+      body: description,
+      head: repo.branch,
+      base: baseBranch,
+      assignees: [currentUser]
     })
-  );
+  });
 }
 
-function MultiSelect(props) {
-  const [cursor, setCursor] = React.useState(0);
-
+function BranchPickerStep({ repo, branches, cursor, setCursor, onSelect }) {
   useInput((input, key) => {
     if (key.upArrow) {
       setCursor((value) => Math.max(0, value - 1));
+      return;
     }
+
     if (key.downArrow) {
-      setCursor((value) => Math.min(props.items.length - 1, value + 1));
+      setCursor((value) => Math.min(branches.length - 1, value + 1));
+      return;
     }
-    if (input === ' ') {
-      if (props.items[cursor]) {
-        props.onToggle(props.items[cursor].login);
-      }
+
+    if (key.return && branches[cursor]) {
+      onSelect(branches[cursor]);
     }
+  });
+
+  const windowSize = 6;
+  const startIndex = Math.max(0, Math.min(cursor - 2, Math.max(0, branches.length - windowSize)));
+  const visibleBranches = branches.slice(startIndex, startIndex + windowSize);
+
+  return React.createElement(
+    FormPanel,
+    {
+      title: 'Create Pull Request',
+      subtitle: `(Step 3 of ${TOTAL_STEPS})`,
+      branchLine: `${repo.branch} → ${branches[cursor] || '?'}`,
+      hint: hintLine('↑↓', 'navigate', 'Enter', 'select', 'Esc', 'back')
+    },
+    React.createElement(
+      Box,
+      { flexDirection: 'column', marginTop: 1 },
+      React.createElement(Text, { color: theme.TEXT_MUTED }, 'Merge into which branch?'),
+      React.createElement(
+        Box,
+        { flexDirection: 'column', marginTop: 1 },
+        ...visibleBranches.map((branch, index) => {
+          const realIndex = startIndex + index;
+          const selected = realIndex === cursor;
+          return React.createElement(
+            Box,
+            { key: branch, flexDirection: 'row' },
+            React.createElement(Text, { color: selected ? theme.PRIMARY : theme.TEXT_DIM }, selected ? '❯ ' : '  '),
+            React.createElement(Text, { color: selected ? theme.TEXT_PRIMARY : theme.TEXT_MUTED, bold: selected }, branch)
+          );
+        }),
+        branches.length > windowSize
+          ? React.createElement(Text, { color: theme.TEXT_DIM }, `  ...${branches.length - visibleBranches.length} more`)
+          : null
+      )
+    )
+  );
+}
+
+function ConfirmStep({ repo, title, description, baseBranch, currentUser, onSubmit }) {
+  useInput((input, key) => {
     if (key.return) {
-      props.onConfirm(props.selected);
-    }
-    if (key.escape && typeof props.onSkip === 'function') {
-      props.onSkip();
+      onSubmit();
     }
   });
 
   return React.createElement(
-    Box,
-    { flexDirection: 'column' },
-    ...props.items.map((item, index) => React.createElement(
+    FormPanel,
+    {
+      title: 'Create Pull Request',
+      subtitle: '(Confirm)',
+      branchLine: `${repo.branch} → ${baseBranch}`,
+      borderColor: theme.SUCCESS,
+      titleColor: theme.SUCCESS,
+      hint: hintLine('Enter', 'submit', 'Esc', 'go back')
+    },
+    React.createElement(
       Box,
-      { key: item.login },
-      React.createElement(Text, { color: props.selected.includes(item.login) ? theme.SUCCESS : theme.TEXT_MUTED }, props.selected.includes(item.login) ? '◉ ' : '○ '),
-      React.createElement(Text, {
-        backgroundColor: index === cursor ? theme.SELECTED_BG : undefined,
-        color: index === cursor ? theme.SELECTED_TEXT : theme.TEXT_DIM
-      }, item.login)
-    )),
+      { flexDirection: 'column', marginTop: 1 },
+      detailLine('Title', title, theme.TEXT_PRIMARY, 14),
+      detailLine('Description', description || '(none)', theme.TEXT_MUTED, 14),
+      detailLine('From', repo.branch, theme.INFO, 14),
+      detailLine('Into', baseBranch, theme.SUCCESS, 14),
+      detailLine('Assignee', `${currentUser} (you)`, theme.WARNING, 14)
+    )
+  );
+}
+
+function FormPanel(props) {
+  return React.createElement(
+    Box,
+    {
+      flexDirection: 'column',
+      borderStyle: 'round',
+      borderColor: props.borderColor || theme.PRIMARY,
+      paddingX: 2,
+      paddingY: 1,
+      marginY: 1
+    },
+    React.createElement(
+      Box,
+      { flexDirection: 'column', marginBottom: 1 },
+      React.createElement(
+        Box,
+        { flexDirection: 'row' },
+        React.createElement(Text, { color: props.titleColor || theme.PRIMARY, bold: true }, props.title),
+        React.createElement(Text, { color: theme.TEXT_MUTED }, `  ${props.subtitle}`)
+      ),
+      React.createElement(Text, { color: theme.TEXT_DIM }, props.branchLine)
+    ),
+    React.createElement(Text, { color: theme.BORDER_DIM }, '─'.repeat(PANEL_WIDTH)),
+    props.children,
     React.createElement(
       Box,
       { marginTop: 1 },
-      React.createElement(
-        Text,
-        { color: theme.TEXT_MUTED },
-        React.createElement(Text, { color: theme.WARNING }, 'Space'),
-        ' toggle  ',
-        React.createElement(Text, { color: theme.WARNING }, 'Enter'),
-        ' confirm  ',
-        React.createElement(Text, { color: theme.WARNING }, 'Esc'),
-        ' skip'
-      )
-    ),
-    props.hint ? React.createElement(Text, { color: theme.TEXT_DIM, dimColor: true }, props.hint) : null
+      props.hint
+    )
   );
 }
 
-function prettyBranch(branch) {
-  return String(branch || '')
-    .replace(/[/-]+/g, ' ')
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
-
-function line(label, value, color) {
+function hintLine(keyA, actionA, keyB, actionB, keyC, actionC) {
   return React.createElement(
     Text,
-    null,
-    React.createElement(Text, { color: theme.TEXT_MUTED }, `${label.padEnd(5, ' ')} : `),
-    React.createElement(Text, { color: color || theme.TEXT_PRIMARY }, value)
+    { color: theme.TEXT_DIM },
+    React.createElement(Text, { color: keyA === 'Enter' ? theme.SUCCESS : theme.WARNING }, keyA),
+    ` ${actionA}`,
+    keyB ? React.createElement(React.Fragment, null,
+      '  ',
+      React.createElement(Text, { color: theme.WARNING }, keyB),
+      ` ${actionB}`
+    ) : null,
+    keyC ? React.createElement(React.Fragment, null,
+      '  ',
+      React.createElement(Text, { color: theme.WARNING }, keyC),
+      ` ${actionC}`
+    ) : null
   );
+}
+
+function detailLine(label, value, color, width) {
+  return React.createElement(
+    Box,
+    { flexDirection: 'row' },
+    React.createElement(
+      Box,
+      { width: width || 14, overflow: 'hidden' },
+      React.createElement(Text, { color: theme.TEXT_MUTED }, label)
+    ),
+    React.createElement(Text, { color: theme.TEXT_MUTED }, ' : '),
+    React.createElement(
+      Box,
+      { flexGrow: 1, overflow: 'hidden' },
+      React.createElement(Text, { color: color || theme.TEXT_PRIMARY }, value)
+    )
+  );
+}
+
+function prettifyBranch(branch) {
+  return String(branch || '')
+    .replace(/^(feature|feat|fix|bug|hotfix)\//, '')
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+    .trim();
 }
 
 module.exports = openCommand;
