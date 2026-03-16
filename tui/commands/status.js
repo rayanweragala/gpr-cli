@@ -22,7 +22,7 @@ async function statusCommand(_args, context) {
       { flexDirection: 'column' },
       React.createElement(
         Box,
-        null,
+        { flexDirection: 'row' },
         React.createElement(
           Box,
           { width: 10 },
@@ -33,7 +33,7 @@ async function statusCommand(_args, context) {
       ),
       React.createElement(
         Box,
-        null,
+        { flexDirection: 'row' },
         React.createElement(
           Box,
           { width: 10 },
@@ -78,7 +78,7 @@ function renderStatus(state, pullRequest) {
     );
   }
 
-  return React.createElement(Text, { color: theme.TEXT_MUTED }, 'No PR');
+  return React.createElement(Text, { color: theme.TEXT_MUTED }, '─ No PR found for this branch');
 }
 
 module.exports = statusCommand;

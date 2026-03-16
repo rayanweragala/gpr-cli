@@ -34,18 +34,40 @@ async function statsCommand(_args, context) {
       Box,
       { flexDirection: 'column' },
       React.createElement(Text, { color: theme.PRIMARY, bold: true }, 'Your PR statistics'),
-      React.createElement(Text, { color: theme.TEXT_PRIMARY }, `Total PRs opened    : ${mine.length}`),
-      React.createElement(Text, { color: theme.WARNING }, `Currently open      : ${open.length}`),
-      React.createElement(Text, { color: theme.SUCCESS }, `Merged / Closed     : ${closed.length}`),
-      React.createElement(Text, { color: theme.TEXT_MUTED }, `This month          : ${thisMonth.length}`),
-      React.createElement(Text, { color: theme.ERROR }, `Oldest open PR      : ${oldestOpen ? `PR #${oldestOpen.number} — ${oldestOpen.title} (${format(oldestOpen.created_at)})` : 'None'}`),
-      React.createElement(Text, { color: theme.SUCCESS }, `Most recent PR      : ${mostRecent ? `PR #${mostRecent.number} — ${mostRecent.title} (${format(mostRecent.created_at)})` : 'None'}`)
+      statRow('Total PRs opened', String(mine.length), theme.TEXT_PRIMARY),
+      statRow('Currently open', String(open.length), theme.WARNING),
+      statRow('Merged / Closed', String(closed.length), theme.SUCCESS),
+      statRow('This month', String(thisMonth.length), theme.TEXT_PRIMARY),
+      statRow(
+        'Oldest open PR',
+        oldestOpen ? `PR #${oldestOpen.number} — ${oldestOpen.title} (${format(oldestOpen.created_at)})` : 'None',
+        theme.ERROR
+      ),
+      statRow(
+        'Most recent PR',
+        mostRecent ? `PR #${mostRecent.number} — ${mostRecent.title} (${format(mostRecent.created_at)})` : 'None',
+        theme.SUCCESS
+      )
     ));
   } catch (error) {
     push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
   } finally {
     setMode('idle');
   }
+}
+
+function statRow(label, value, valueColor) {
+  return React.createElement(
+    Box,
+    { flexDirection: 'row' },
+    React.createElement(
+      Box,
+      { width: 24 },
+      React.createElement(Text, { color: theme.TEXT_MUTED }, label)
+    ),
+    React.createElement(Text, { color: theme.TEXT_MUTED }, ' : '),
+    React.createElement(Text, { color: valueColor }, value)
+  );
 }
 
 module.exports = statsCommand;

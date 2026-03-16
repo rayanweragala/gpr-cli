@@ -10,15 +10,15 @@ async function teammatesCommand(_args, context) {
 
   try {
     const api = buildApi(config);
-    const pullRequests = await listOpenPullRequests(api, repo.owner, repo.repo);
+    const prs = await listOpenPullRequests(api, repo.owner, repo.repo);
 
-    if (!pullRequests.length) {
+    if (!prs.length) {
       push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'No open pull requests found.'));
       return;
     }
 
     const byAuthor = {};
-    pullRequests.forEach((pullRequest) => {
+    prs.forEach((pullRequest) => {
       const login = pullRequest.user ? pullRequest.user.login : 'unknown';
       if (!byAuthor[login]) {
         byAuthor[login] = [];
@@ -31,36 +31,47 @@ async function teammatesCommand(_args, context) {
       { flexDirection: 'column' },
       React.createElement(Text, { color: theme.PRIMARY, bold: true }, `Team Activity — ${repo.owner}/${repo.repo}`),
       React.createElement(Text, { color: theme.TEXT_MUTED }, 'Open PRs grouped by team member:'),
-      React.createElement(
+      ...Object.entries(byAuthor).map(([author, authorPrs]) => React.createElement(
         Box,
-        { marginTop: 1, flexDirection: 'column' },
-        ...Object.entries(byAuthor).map(([author, authorPullRequests]) => React.createElement(
+        { key: author, flexDirection: 'column', marginTop: 1 },
+        React.createElement(
           Box,
-          { key: author, flexDirection: 'column', marginBottom: 1 },
+          { flexDirection: 'row' },
+          React.createElement(Text, { color: theme.SECONDARY, bold: true }, author),
+          React.createElement(
+            Text,
+            { color: theme.TEXT_MUTED },
+            `  ${authorPrs.length} open PR${authorPrs.length > 1 ? 's' : ''}`
+          )
+        ),
+        ...authorPrs.map((pullRequest) => React.createElement(
+          Box,
+          { key: pullRequest.number, flexDirection: 'row', paddingLeft: 2 },
           React.createElement(
             Box,
-            null,
-            React.createElement(Text, { color: theme.SECONDARY, bold: true }, author),
-            React.createElement(
-              Text,
-              { color: theme.TEXT_MUTED },
-              `  ${authorPullRequests.length} open PR${authorPullRequests.length > 1 ? 's' : ''}`
-            )
-          ),
-          ...authorPullRequests.map((pullRequest) => React.createElement(
-            Box,
-            { key: pullRequest.number, paddingLeft: 2 },
+            { width: 6, overflow: 'hidden' },
             React.createElement(Text, { color: theme.TEXT_DIM }, `#${pullRequest.number}`),
-            React.createElement(Text, { color: theme.TEXT_PRIMARY }, ` ${truncate(pullRequest.title, 40)}`),
-            React.createElement(Text, { color: theme.TEXT_MUTED }, '  '),
+          ),
+          React.createElement(
+            Box,
+            { width: 40, overflow: 'hidden' },
+            React.createElement(Text, { color: theme.TEXT_PRIMARY }, truncate(pullRequest.title, 39))
+          ),
+          React.createElement(
+            Box,
+            { width: 14, overflow: 'hidden' },
             React.createElement(Text, { color: getAgeColor(pullRequest.created_at) }, format(pullRequest.created_at))
-          ))
+          )
         ))
-      ),
+      )),
       React.createElement(
-        Text,
-        { color: theme.TEXT_MUTED },
-        `${pullRequests.length} total open PRs across ${Object.keys(byAuthor).length} team members`
+        Box,
+        { marginTop: 1 },
+        React.createElement(
+          Text,
+          { color: theme.TEXT_MUTED },
+          `${prs.length} total open PRs across ${Object.keys(byAuthor).length} team member${Object.keys(byAuthor).length > 1 ? 's' : ''}`
+        )
       )
     ));
   } catch (error) {

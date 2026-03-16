@@ -45,13 +45,13 @@ async function waitingCommand(_args, context) {
           { key: pullRequest.number, flexDirection: 'column', marginBottom: 1 },
           React.createElement(
             Box,
-            null,
+            { flexDirection: 'row' },
             React.createElement(Text, { color: theme.SECONDARY, bold: true }, `#${pullRequest.number}`),
             React.createElement(Text, { color: theme.TEXT_PRIMARY }, ` ${pullRequest.title}`)
           ),
           React.createElement(
             Box,
-            { paddingLeft: 2 },
+            { paddingLeft: 2, flexDirection: 'row' },
             React.createElement(Text, { color: theme.TEXT_MUTED }, `by ${pullRequest.user ? pullRequest.user.login : 'unknown'}`),
             React.createElement(Text, { color: theme.TEXT_MUTED }, '  '),
             React.createElement(Text, { color: theme.INFO }, pullRequest.head ? pullRequest.head.ref : ''),
@@ -67,9 +67,13 @@ async function waitingCommand(_args, context) {
         ))
       ),
       React.createElement(
-        Text,
-        { color: theme.TEXT_MUTED },
-        `${waiting.length} PR${waiting.length > 1 ? 's' : ''} waiting for your review`
+        Box,
+        { marginTop: 1 },
+        React.createElement(
+          Text,
+          { color: theme.TEXT_MUTED },
+          `${waiting.length} PR${waiting.length > 1 ? 's' : ''} waiting for your review`
+        )
       )
     ));
   } catch (error) {

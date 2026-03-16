@@ -49,7 +49,7 @@ function ListOutput(props) {
     const selected = isActive && index === selectedIndex;
     return React.createElement(
       Box,
-      { key: pullRequest.number, backgroundColor: selected ? theme.SELECTED_BG : undefined },
+      { key: pullRequest.number, flexDirection: 'row', backgroundColor: selected ? theme.SELECTED_BG : undefined },
       dataCell(String(pullRequest.number), 5, selected ? theme.SELECTED_TEXT : theme.SECONDARY, true),
       dataCell(truncate(pullRequest.title, 29), 30, selected ? theme.SELECTED_TEXT : theme.TEXT_PRIMARY),
       dataCell(truncate(pullRequest.user ? pullRequest.user.login : '', 17), 18, selected ? theme.SELECTED_TEXT : theme.TEXT_MUTED),
@@ -114,7 +114,7 @@ function ListOutput(props) {
     { flexDirection: 'column' },
     React.createElement(
       Box,
-      { marginBottom: 0 },
+      { flexDirection: 'row', marginBottom: 0 },
       headerCell('#', 5),
       headerCell('Title', 30),
       headerCell('Author', 18),
@@ -142,14 +142,18 @@ function ListOutput(props) {
         ' skip to input'
       )
     ) : null,
-    React.createElement(Text, { color: theme.TEXT_MUTED }, `Total: ${props.pullRequests.length} open pull requests`)
+    React.createElement(
+      Box,
+      { marginTop: 1 },
+      React.createElement(Text, { color: theme.TEXT_MUTED }, `Total: ${String(props.pullRequests.length)} open pull requests`)
+    )
   );
 }
 
 function headerCell(label, width) {
   return React.createElement(
     Box,
-    { width },
+    { width, overflow: 'hidden' },
     React.createElement(Text, { bold: true, color: theme.PRIMARY }, label)
   );
 }

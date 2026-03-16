@@ -12,30 +12,50 @@ const PRTable = require('../components/PRTable');
 const theme = require('../theme');
 
 async function mineCommand(_args, context) {
-  const { config, push, setMode } = context;
+  const { config, repo, push, setMode } = context;
   setMode('loading');
 
   try {
     const api = buildApi(config);
     const user = await getAuthenticatedUser(api);
-    const orgs = await listUserOrgs(api);
-    const repoGroups = [];
-    const repoSets = await Promise.all(orgs.map(async (org) => {
+    let orgs = await listUserOrgs(api).catch(() => []);
+    const allRepos = [];
+
+    if (!orgs.length && repo) {
+      orgs = [{ login: repo.owner }];
+    }
+
+    for (const org of orgs) {
       try {
         const repos = await listOrgRepos(api, org.login);
-        return repos.map((repo) => ({ owner: org.login, repo: repo.name }));
+        repos.forEach((targetRepo) => allRepos.push({
+          owner: org.login,
+          repo: targetRepo.name
+        }));
       } catch (_error) {
-        return [];
+        // Skip org fetch failures.
       }
-    }));
-    const repos = repoSets.flat();
+    }
 
-    for (let index = 0; index < repos.length; index += 5) {
-      const batch = repos.slice(index, index + 5);
+    if (!allRepos.length && repo) {
+      allRepos.push({
+        owner: repo.owner,
+        repo: repo.repo
+      });
+    }
+
+    const repoGroups = [];
+
+    for (let index = 0; index < allRepos.length; index += 5) {
+      const batch = allRepos.slice(index, index + 5);
       const results = await Promise.all(batch.map(async (target) => {
         try {
           const prs = await listOpenPullRequests(api, target.owner, target.repo);
-          const mine = prs.filter((pullRequest) => pullRequest.user && pullRequest.user.login === user.login);
+          const mine = prs.filter((pullRequest) => (
+            pullRequest.user &&
+            pullRequest.user.login &&
+            pullRequest.user.login.toLowerCase() === user.login.toLowerCase()
+          ));
           return mine.length ? { ...target, pullRequests: mine } : null;
         } catch (_error) {
           return null;
@@ -48,7 +68,21 @@ async function mineCommand(_args, context) {
     const total = repoGroups.reduce((sum, group) => sum + group.pullRequests.length, 0);
 
     if (!total) {
-      push(React.createElement(Text, { color: theme.WARNING }, 'No open pull requests found.'));
+      push(React.createElement(
+        Box,
+        { flexDirection: 'column' },
+        React.createElement(Text, { color: theme.WARNING }, `No open PRs found for ${user.login}`),
+        React.createElement(
+          Text,
+          { color: theme.TEXT_MUTED },
+          `Checked ${allRepos.length} repos across ${orgs.length} org${orgs.length > 1 ? 's' : ''}`
+        ),
+        React.createElement(
+          Text,
+          { color: theme.TEXT_DIM },
+          `Orgs checked: ${orgs.map((org) => org.login).join(', ')}`
+        )
+      ));
       return;
     }
 
@@ -66,7 +100,11 @@ async function mineCommand(_args, context) {
           showUrl: false
         })
       )),
-      React.createElement(Text, { color: theme.TEXT_MUTED }, `Total: ${total} open PRs across ${repoGroups.length} repos`)
+      React.createElement(
+        Box,
+        { marginTop: 1 },
+        React.createElement(Text, { color: theme.TEXT_MUTED }, `Total: ${String(total)} open PRs across ${String(repoGroups.length)} repos`)
+      )
     ));
   } catch (error) {
     push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
