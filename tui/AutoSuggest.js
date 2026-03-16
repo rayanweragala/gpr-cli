@@ -4,20 +4,24 @@ const theme = require('./theme');
 
 const COMMANDS = [
   { cmd: '/list', desc: 'List open pull requests' },
-  { cmd: '/open', desc: 'Create a pull request for current branch' },
+  { cmd: '/open', desc: 'Create a pull request' },
   { cmd: '/status', desc: 'PR status for current branch' },
   { cmd: '/diff', desc: 'Show branch diff summary' },
   { cmd: '/review', desc: 'Review a PR  e.g. /review 24' },
-  { cmd: '/checkout', desc: 'Checkout a PR branch interactively' },
+  { cmd: '/checkout', desc: 'Checkout a PR branch' },
   { cmd: '/merge', desc: 'Merge a PR  e.g. /merge 24' },
-  { cmd: '/assign', desc: 'Assign reviewer  e.g. /assign 24 rayan_synapse' },
-  { cmd: '/mine', desc: 'Your open PRs across all org repos' },
-  { cmd: '/watch', desc: 'Live auto-refresh PR dashboard' },
-  { cmd: '/stale', desc: 'Stale PRs  e.g. /stale 14  (default 7d)' },
-  { cmd: '/stats', desc: 'Your PR statistics for this repo' },
-  { cmd: '/config', desc: 'Update GitBucket connection settings' },
-  { cmd: '/clear', desc: 'Clear history' },
-  { cmd: '/help', desc: 'Show all available commands' },
+  { cmd: '/assign', desc: 'Assign reviewer e.g. /assign 24 user' },
+  { cmd: '/waiting', desc: 'PRs waiting for your review' },
+  { cmd: '/teammates', desc: 'Open PRs grouped by team member' },
+  { cmd: '/conflicts', desc: 'Scan PRs for merge conflicts' },
+  { cmd: '/remind', desc: 'Post reminder on a PR  e.g. /remind 24' },
+  { cmd: '/mine', desc: 'Your PRs across all org repos' },
+  { cmd: '/watch', desc: 'Live auto-refresh dashboard' },
+  { cmd: '/stale', desc: 'Stale PRs  e.g. /stale 14' },
+  { cmd: '/stats', desc: 'Your PR statistics' },
+  { cmd: '/config', desc: 'Update connection settings' },
+  { cmd: '/clear', desc: 'Clear shell history' },
+  { cmd: '/help', desc: 'Show all commands' },
   { cmd: '/exit', desc: 'Quit GPR shell' }
 ];
 
@@ -89,15 +93,13 @@ function AutoSuggest(props) {
 
 function filterCommands(query) {
   const value = String(query || '').trim();
-  const maxSuggestions = (process.stdout.rows || 40) < 30 ? 5 : 8;
 
   if (!value.startsWith('/')) {
     return [];
   }
 
   return COMMANDS
-    .filter((item) => item.cmd.startsWith(value.toLowerCase()))
-    .slice(0, maxSuggestions);
+    .filter((item) => item.cmd.startsWith(value.toLowerCase()));
 }
 
 function descriptionWidth() {

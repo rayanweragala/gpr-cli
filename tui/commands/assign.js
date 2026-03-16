@@ -14,7 +14,7 @@ const {
 const theme = require('../theme');
 
 async function assignCommand(args, context) {
-  const { config, repo, push, setMode, setActiveForm } = context;
+  const { config, repo, push, setMode, setActiveForm, dismissForm } = context;
   setMode('loading');
   let nextForm = null;
 
@@ -64,7 +64,7 @@ async function assignCommand(args, context) {
       members,
       initialPrNumber: requestedPrNumber,
       onSubmit: async ({ prNumber, reviewers }) => {
-        setActiveForm(null);
+        dismissForm();
         setMode('loading');
 
         try {
@@ -76,8 +76,7 @@ async function assignCommand(args, context) {
         }
       },
       onCancel: () => {
-        setActiveForm(null);
-        setMode('idle');
+        dismissForm();
         push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'Assignment cancelled.'));
       }
     });

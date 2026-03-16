@@ -54,7 +54,7 @@ function InputBar(props) {
           value: props.value,
           onChange: props.onChange,
           onSubmit: props.onSubmit,
-          focus: true,
+          focus: props.mode === 'idle',
           placeholder: 'Type /command  or  /help for list...'
         })
       : React.createElement(Text, { color: theme.TEXT_MUTED }, hint),

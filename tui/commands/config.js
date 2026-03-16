@@ -14,12 +14,11 @@ async function configCommand(_args, context) {
   context.setActiveForm(React.createElement(ConfigForm, {
     existing: context.config || {},
     onCancel: () => {
-      context.setActiveForm(null);
-      context.setMode('idle');
+      context.dismissForm();
       context.push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'Config update cancelled.'));
     },
     onSubmit: async (formData) => {
-      context.setActiveForm(null);
+      context.dismissForm();
       context.setMode('loading');
 
       try {

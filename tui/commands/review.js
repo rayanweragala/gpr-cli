@@ -68,8 +68,7 @@ function ReviewPicker(props) {
         value: pullRequest.number
       })),
       onSelect: async (item) => {
-        props.setActiveForm(null);
-        props.setMode('idle');
+        props.dismissForm();
         await loadReview(item.value, props);
       }
     })
@@ -77,8 +76,8 @@ function ReviewPicker(props) {
 }
 
 async function loadReview(number, context) {
-  const { config, repo, push, setMode, setActiveForm } = context;
-  setActiveForm(null);
+  const { config, repo, push, setMode, dismissForm } = context;
+  dismissForm();
   setMode('loading');
 
   try {
@@ -116,15 +115,26 @@ async function loadReview(number, context) {
         React.createElement(StatusBadge, { state: pullRequest.merged_at ? 'merged' : pullRequest.state === 'closed' ? 'closed' : 'open' })
       ),
       detailLine('Updated', React.createElement(Text, { color: theme.TEXT_PRIMARY }, format(pullRequest.updated_at))),
-      detailLine('Description', React.createElement(
-        Text,
-        { color: theme.TEXT_PRIMARY },
-        truncate(pullRequest.body && pullRequest.body.trim() ? pullRequest.body : '(No description)', 120)
-      )),
       detailLine('Files Changed', React.createElement(Text, { color: theme.TEXT_PRIMARY }, String(pullRequest.changed_files || 0))),
       detailLine('Additions', React.createElement(Text, { color: theme.SUCCESS }, `+${pullRequest.additions || 0}`)),
       detailLine('Deletions', React.createElement(Text, { color: theme.ERROR }, `-${pullRequest.deletions || 0}`)),
       detailLine('Comments', React.createElement(Text, { color: theme.TEXT_PRIMARY }, String(comments.length))),
+      React.createElement(
+        Box,
+        { marginTop: 1, flexDirection: 'column' },
+        React.createElement(Text, { color: theme.TEXT_MUTED }, 'Description:'),
+        React.createElement(
+          Box,
+          { marginTop: 0, paddingLeft: 2, overflow: 'hidden' },
+          React.createElement(
+            Text,
+            { color: theme.TEXT_PRIMARY },
+            pullRequest.body && pullRequest.body.trim()
+              ? pullRequest.body.trim()
+              : '(No description)'
+          )
+        )
+      ),
       React.createElement(
         Box,
         { flexDirection: 'column', marginTop: 1 },
@@ -146,8 +156,7 @@ async function loadReview(number, context) {
 }
 
 function cancel(context) {
-  context.setActiveForm(null);
-  context.setMode('idle');
+  context.dismissForm();
   context.push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'Review cancelled.'));
 }
 

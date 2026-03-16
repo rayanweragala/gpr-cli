@@ -17,7 +17,7 @@ const {
 const theme = require('../theme');
 
 async function openCommand(_args, context) {
-  const { config, repo, push, setMode, setActiveForm } = context;
+  const { config, repo, push, setMode, setActiveForm, dismissForm } = context;
   setMode('loading');
 
   try {
@@ -98,7 +98,7 @@ async function openCommand(_args, context) {
       members,
       currentUser,
       onSubmit: async (formData) => {
-        setActiveForm(null);
+        dismissForm();
         setMode('loading');
         try {
           const pr = await createPullRequest(api, repo.owner, repo.repo, {
@@ -133,8 +133,7 @@ async function openCommand(_args, context) {
         }
       },
       onCancel: () => {
-        setActiveForm(null);
-        setMode('idle');
+        dismissForm();
         push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'PR creation cancelled.'));
       }
     }));

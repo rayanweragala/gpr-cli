@@ -23,7 +23,7 @@ async function checkoutCommand(_args, context) {
     setActiveForm(React.createElement(CheckoutForm, {
       pullRequests,
       onSelect: async (pullRequest) => {
-        setActiveForm(null);
+        context.dismissForm();
         setMode('loading');
         try {
           await fetchOrigin();
@@ -42,8 +42,7 @@ async function checkoutCommand(_args, context) {
         }
       },
       onCancel: () => {
-        setActiveForm(null);
-        setMode('idle');
+        context.dismissForm();
         push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'Checkout cancelled.'));
       }
     }));

@@ -18,6 +18,10 @@ const COMMAND_MAP = {
   checkout: require('./commands/checkout'),
   merge: require('./commands/merge'),
   assign: require('./commands/assign'),
+  waiting: require('./commands/waiting'),
+  teammates: require('./commands/teammates'),
+  conflicts: require('./commands/conflicts'),
+  remind: require('./commands/remind'),
   mine: require('./commands/mine'),
   watch: require('./commands/watch'),
   stale: require('./commands/stale'),
@@ -35,6 +39,10 @@ const REQUIREMENTS = {
   checkout: { config: true, repo: true },
   merge: { config: true, repo: true },
   assign: { config: true, repo: true },
+  waiting: { config: true, repo: true },
+  teammates: { config: true, repo: true },
+  conflicts: { config: true, repo: true },
+  remind: { config: true, repo: true },
   mine: { config: true, repo: false },
   watch: { config: true, repo: true },
   stale: { config: true, repo: true },
@@ -49,6 +57,7 @@ function App(props) {
   const initialRun = React.useRef(false);
   const mountedRef = React.useRef(true);
   const contextRef = React.useRef(null);
+  const activeFormRef = React.useRef(null);
   const [history, setHistory] = React.useState(createInitialHistory(props.showWelcome !== false));
   const [input, setInput] = React.useState('');
   const [mode, setMode] = React.useState('idle');
@@ -61,6 +70,16 @@ function App(props) {
   const [config, setConfig] = React.useState(props.config || null);
   const [repo, setRepo] = React.useState(props.repo || null);
   const [initialDone, setInitialDone] = React.useState(false);
+  const setActiveFormValue = React.useCallback((form) => {
+    activeFormRef.current = form;
+    setActiveForm(form);
+  }, []);
+  const hasActiveForm = React.useCallback(() => activeFormRef.current !== null, []);
+  const dismissForm = React.useCallback(() => {
+    activeFormRef.current = null;
+    setActiveForm(null);
+    setMode('idle');
+  }, []);
 
   const push = React.useCallback((element) => {
     const key = `entry-${nextId.current++}`;
@@ -137,6 +156,12 @@ function App(props) {
 
     if (mode === 'form' && key.escape && activeForm && activeForm.props && typeof activeForm.props.onCancel === 'function') {
       activeForm.props.onCancel();
+      return;
+    }
+
+    if (key.escape && !activeForm && mode !== 'idle') {
+      setMode('idle');
+      setActiveFormValue(null);
     }
   });
 
@@ -215,15 +240,17 @@ function App(props) {
     repo,
     push,
     setMode,
-    setActiveForm,
-      clearHistory,
-      exit,
-      refreshContext,
-      setConfig,
-      setRepo,
-      setInputPaused,
-      pushCommand,
-      runCommand: (command, providedContext) => executeCommand(command, providedContext || context)
+    setActiveForm: setActiveFormValue,
+    hasActiveForm,
+    dismissForm,
+    clearHistory,
+    exit,
+    refreshContext,
+    setConfig,
+    setRepo,
+    setInputPaused,
+    pushCommand,
+    runCommand: (command, providedContext) => executeCommand(command, providedContext || context)
   };
   contextRef.current = context;
 
@@ -335,9 +362,12 @@ async function runCommand(rawInput, context) {
       context.setRepo(latest.repo);
     }
   } catch (error) {
-    context.setMode('idle');
-    context.setActiveForm(null);
+    context.dismissForm();
     context.push(React.createElement(Text, { color: theme.ERROR }, `✖ ${error.message || 'Unexpected error'}`));
+  } finally {
+    if (!context.hasActiveForm()) {
+      context.setMode('idle');
+    }
   }
 }
 

@@ -40,7 +40,7 @@ async function mergeCommand(args, context) {
     context.setActiveForm(React.createElement(MergePicker, {
       pullRequests,
       onSelect: async (pullRequest) => {
-        context.setActiveForm(null);
+        context.dismissForm();
         await loadMerge(pullRequest.number, context);
       },
       onCancel: () => cancel(context, 'Merge cancelled.')
@@ -99,7 +99,7 @@ async function loadMerge(number, context) {
           return;
         }
 
-        setActiveForm(null);
+        context.dismissForm();
         setMode('loading');
         try {
           await mergePullRequest(api, repo.owner, repo.repo, number, { merge_method: 'merge' });
@@ -143,8 +143,7 @@ function MergeConfirm(props) {
 }
 
 function cancel(context, message) {
-  context.setActiveForm(null);
-  context.setMode('idle');
+  context.dismissForm();
   context.push(React.createElement(Text, { color: theme.TEXT_MUTED }, message));
 }
 
