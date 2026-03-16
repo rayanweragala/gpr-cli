@@ -93,29 +93,38 @@ async function loadReview(number, context) {
       Box,
       { flexDirection: 'column' },
       React.createElement(Text, { color: theme.SECONDARY, bold: true }, `PR #${pullRequest.number} — ${pullRequest.title}`),
-      React.createElement(Text, { color: theme.TEXT_MUTED }, 'Author   : ', React.createElement(Text, { color: theme.TEXT_PRIMARY }, pullRequest.user ? pullRequest.user.login : 'unknown')),
-      React.createElement(
+      detailLine('Author', React.createElement(
         Text,
-        null,
-        React.createElement(Text, { color: theme.TEXT_MUTED }, 'Branch   : '),
-        React.createElement(Text, { color: theme.INFO }, pullRequest.head.ref),
-        React.createElement(Text, { color: theme.TEXT_PRIMARY }, ' → '),
-        React.createElement(Text, { color: theme.SUCCESS }, pullRequest.base.ref)
-      ),
+        { color: theme.TEXT_PRIMARY },
+        truncate(pullRequest.user ? pullRequest.user.login : 'unknown', 40)
+      )),
       React.createElement(
         Box,
         null,
-        React.createElement(Text, { color: theme.TEXT_MUTED }, 'Status   : '),
+        labelCell('Branch'),
+        separatorCell(),
+        React.createElement(
+          Box,
+          { flexGrow: 1, overflow: 'hidden' },
+          React.createElement(Text, { color: theme.INFO }, truncate(pullRequest.head.ref, 24)),
+          React.createElement(Text, { color: theme.TEXT_MUTED }, ' → '),
+          React.createElement(Text, { color: theme.SUCCESS }, truncate(pullRequest.base.ref, 24))
+        )
+      ),
+      detailLine(
+        'Status',
         React.createElement(StatusBadge, { state: pullRequest.merged_at ? 'merged' : pullRequest.state === 'closed' ? 'closed' : 'open' })
       ),
-      React.createElement(Text, { color: theme.TEXT_PRIMARY }, `Created  : ${format(pullRequest.created_at)}`),
-      React.createElement(Text, { color: theme.TEXT_PRIMARY }, `Updated  : ${format(pullRequest.updated_at)}`),
-      React.createElement(Text, { color: theme.TEXT_MUTED }, 'Description:'),
-      React.createElement(Text, { color: theme.TEXT_PRIMARY }, pullRequest.body && pullRequest.body.trim() ? pullRequest.body : '(No description)'),
-      React.createElement(Text, { color: theme.TEXT_PRIMARY }, `Files Changed : ${pullRequest.changed_files || 0}`),
-      React.createElement(Text, { color: theme.SUCCESS }, `Additions     : +${pullRequest.additions || 0}`),
-      React.createElement(Text, { color: theme.ERROR }, `Deletions     : -${pullRequest.deletions || 0}`),
-      React.createElement(Text, { color: theme.TEXT_PRIMARY }, `Comments      : ${comments.length}`),
+      detailLine('Updated', React.createElement(Text, { color: theme.TEXT_PRIMARY }, format(pullRequest.updated_at))),
+      detailLine('Description', React.createElement(
+        Text,
+        { color: theme.TEXT_PRIMARY },
+        truncate(pullRequest.body && pullRequest.body.trim() ? pullRequest.body : '(No description)', 120)
+      )),
+      detailLine('Files Changed', React.createElement(Text, { color: theme.TEXT_PRIMARY }, String(pullRequest.changed_files || 0))),
+      detailLine('Additions', React.createElement(Text, { color: theme.SUCCESS }, `+${pullRequest.additions || 0}`)),
+      detailLine('Deletions', React.createElement(Text, { color: theme.ERROR }, `-${pullRequest.deletions || 0}`)),
+      detailLine('Comments', React.createElement(Text, { color: theme.TEXT_PRIMARY }, String(comments.length))),
       React.createElement(
         Box,
         { flexDirection: 'column', marginTop: 1 },
@@ -142,6 +151,32 @@ function cancel(context) {
   context.push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'Review cancelled.'));
 }
 
+function detailLine(label, content) {
+  return React.createElement(
+    Box,
+    null,
+    labelCell(label),
+    separatorCell(),
+    React.createElement(
+      Box,
+      { flexGrow: 1, overflow: 'hidden' },
+      content
+    )
+  );
+}
+
+function labelCell(label) {
+  return React.createElement(
+    Box,
+    { width: 14 },
+    React.createElement(Text, { color: theme.TEXT_MUTED }, label)
+  );
+}
+
+function separatorCell() {
+  return React.createElement(Text, { color: theme.TEXT_MUTED }, ' : ');
+}
+
 async function safeLoad(work) {
   try {
     return await work();
@@ -152,6 +187,11 @@ async function safeLoad(work) {
 
     throw error;
   }
+}
+
+function truncate(value, maxLength) {
+  const text = String(value || '');
+  return text.length <= maxLength ? text : `${text.slice(0, maxLength - 1)}…`;
 }
 
 function renderReviewers(pullRequest, reviews) {

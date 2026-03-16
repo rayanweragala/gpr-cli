@@ -45,6 +45,25 @@ function ListOutput(props) {
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [done, setDone] = React.useState(false);
   const isActive = !done && props.listId === activeListId;
+  const rows = props.pullRequests.map((pullRequest, index) => {
+    const selected = isActive && index === selectedIndex;
+    return React.createElement(
+      Box,
+      { key: pullRequest.number, backgroundColor: selected ? theme.SELECTED_BG : undefined },
+      dataCell(String(pullRequest.number), 5, selected ? theme.SELECTED_TEXT : theme.SECONDARY, true),
+      dataCell(truncate(pullRequest.title, 29), 30, selected ? theme.SELECTED_TEXT : theme.TEXT_PRIMARY),
+      dataCell(truncate(pullRequest.user ? pullRequest.user.login : '', 17), 18, selected ? theme.SELECTED_TEXT : theme.TEXT_MUTED),
+      dataCell(truncate(pullRequest.head ? pullRequest.head.ref : '', 21), 22, selected ? theme.SELECTED_TEXT : theme.INFO),
+      dataCell(truncate(pullRequest.base ? pullRequest.base.ref : '', 15), 16, selected ? theme.SELECTED_TEXT : theme.SUCCESS),
+      dataCell(format(pullRequest.created_at), 13, selected ? theme.SELECTED_TEXT : getAgeColor(pullRequest.created_at))
+    );
+  });
+
+  React.useEffect(() => {
+    if (props.pullRequests.length !== rows.length) {
+      process.stderr.write(`[list debug] expected ${props.pullRequests.length} rows, rendered ${rows.length}\n`);
+    }
+  }, [props.pullRequests.length, rows.length]);
 
   React.useEffect(() => {
     if (isActive && typeof props.setInputPaused === 'function') {
@@ -108,19 +127,7 @@ function ListOutput(props) {
       { marginBottom: 1 },
       React.createElement(Text, { color: theme.BORDER_DIM }, '─'.repeat(Math.min((process.stdout.columns || 120) - 2, 104)))
     ),
-    ...props.pullRequests.map((pullRequest, index) => {
-      const selected = isActive && index === selectedIndex;
-      return React.createElement(
-        Box,
-        { key: pullRequest.number, backgroundColor: selected ? theme.SELECTED_BG : undefined },
-        dataCell(String(pullRequest.number), 5, selected ? theme.SELECTED_TEXT : theme.SECONDARY, true),
-        dataCell(truncate(pullRequest.title, 29), 30, selected ? theme.SELECTED_TEXT : theme.TEXT_PRIMARY),
-        dataCell(truncate(pullRequest.user ? pullRequest.user.login : '', 17), 18, selected ? theme.SELECTED_TEXT : theme.TEXT_MUTED),
-        dataCell(truncate(pullRequest.head ? pullRequest.head.ref : '', 21), 22, selected ? theme.SELECTED_TEXT : theme.INFO),
-        dataCell(truncate(pullRequest.base ? pullRequest.base.ref : '', 15), 16, selected ? theme.SELECTED_TEXT : theme.SUCCESS),
-        dataCell(format(pullRequest.created_at), 13, selected ? theme.SELECTED_TEXT : getAgeColor(pullRequest.created_at))
-      );
-    }),
+    ...rows,
     isActive ? React.createElement(
       Box,
       { marginTop: 1 },
@@ -150,7 +157,7 @@ function headerCell(label, width) {
 function dataCell(value, width, color, bold) {
   return React.createElement(
     Box,
-    { width },
+    { width, overflow: 'hidden' },
     React.createElement(Text, { color, bold: Boolean(bold) }, pad(value, width))
   );
 }

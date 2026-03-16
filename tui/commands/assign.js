@@ -6,6 +6,7 @@ const {
   buildApi,
   listOpenPullRequests,
   getRepoCollaborators,
+  getOrgMembers,
   requestReviewers,
   addAssignees,
   formatApiError
@@ -15,6 +16,7 @@ const theme = require('../theme');
 async function assignCommand(args, context) {
   const { config, repo, push, setMode, setActiveForm } = context;
   setMode('loading');
+  let nextForm = null;
 
   try {
     const api = buildApi(config);
@@ -25,12 +27,10 @@ async function assignCommand(args, context) {
 
       if (Number.isNaN(prNumber)) {
         push(React.createElement(Text, { color: theme.ERROR }, '✖ Usage: /assign 24 rayan_synapse'));
-        setMode('idle');
         return;
       }
 
       await assignReviewer(api, repo, prNumber, [reviewer], push);
-      setMode('idle');
       return;
     }
 
@@ -38,62 +38,28 @@ async function assignCommand(args, context) {
 
     if (args[0] && Number.isNaN(requestedPrNumber)) {
       push(React.createElement(Text, { color: theme.ERROR }, '✖ Usage: /assign 24 [reviewer]'));
-      setMode('idle');
       return;
     }
 
     const [allPullRequests, fetchedMembers] = await Promise.all([
       listOpenPullRequests(api, repo.owner, repo.repo),
-      getRepoCollaborators(api, repo.owner, repo.repo)
+      loadAssignableMembers(api, repo.owner, repo.repo)
     ]);
 
     const pullRequests = requestedPrNumber === null
       ? allPullRequests
       : allPullRequests.filter((pullRequest) => pullRequest.number === requestedPrNumber);
-    let members = fetchedMembers;
-
-    if (!members.length) {
-      const testEndpoints = [
-        `/repos/${repo.owner}/${repo.repo}/collaborators`,
-        `/orgs/${repo.owner}/members`,
-        `/repos/${repo.owner}/${repo.repo}/teams`
-      ];
-
-      for (const endpoint of testEndpoints) {
-        try {
-          const response = await api.get(endpoint);
-
-          if (Array.isArray(response.data) && response.data.length > 0) {
-            process.stderr.write(
-              `[assign debug] Working endpoint: ${endpoint} returned ${response.data.length} members\n`
-            );
-            members = response.data
-              .map((member) => ({
-                login: member.login || member.name || member.slug,
-                ...member
-              }))
-              .filter((member) => member.login);
-            break;
-          }
-        } catch (error) {
-          process.stderr.write(
-            `[assign debug] Failed: ${endpoint} -> ${error.response?.status}\n`
-          );
-        }
-      }
-    }
+    const members = fetchedMembers;
 
     if (!pullRequests.length) {
       const message = requestedPrNumber === null
         ? 'No open pull requests found.'
         : `Pull request #${requestedPrNumber} was not found in open pull requests.`;
       push(React.createElement(Text, { color: theme.WARNING }, message));
-      setMode('idle');
       return;
     }
 
-    setMode('form');
-    setActiveForm(React.createElement(AssignForm, {
+    nextForm = React.createElement(AssignForm, {
       pullRequests,
       members,
       initialPrNumber: requestedPrNumber,
@@ -114,10 +80,47 @@ async function assignCommand(args, context) {
         setMode('idle');
         push(React.createElement(Text, { color: theme.TEXT_MUTED }, 'Assignment cancelled.'));
       }
-    }));
+    });
   } catch (error) {
     push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
+  } finally {
     setMode('idle');
+
+    if (nextForm) {
+      setActiveForm(nextForm);
+      setMode('form');
+    }
+  }
+}
+
+async function loadAssignableMembers(api, owner, repo) {
+  const collaborators = await loadMembersWithTimeout(
+    () => getRepoCollaborators(api, owner, repo),
+    'collaborators timeout'
+  );
+
+  if (collaborators.length) {
+    return collaborators;
+  }
+
+  return loadMembersWithTimeout(
+    () => getOrgMembers(api, owner),
+    'organization members timeout'
+  );
+}
+
+async function loadMembersWithTimeout(work, message) {
+  try {
+    const result = await Promise.race([
+      work(),
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(message)), 5000);
+      })
+    ]);
+
+    return Array.isArray(result) ? result : [];
+  } catch (_error) {
+    return [];
   }
 }
 

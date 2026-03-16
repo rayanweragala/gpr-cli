@@ -5,7 +5,6 @@ const {
   findPullRequestByBranchWithState,
   formatApiError
 } = require('../../lib/api');
-const StatusBadge = require('../components/StatusBadge');
 const theme = require('../theme');
 
 async function statusCommand(_args, context) {
@@ -22,17 +21,26 @@ async function statusCommand(_args, context) {
       Box,
       { flexDirection: 'column' },
       React.createElement(
-        Text,
+        Box,
         null,
-        React.createElement(Text, { color: theme.TEXT_MUTED }, 'Branch : '),
+        React.createElement(
+          Box,
+          { width: 10 },
+          React.createElement(Text, { color: theme.TEXT_MUTED }, 'Branch')
+        ),
+        React.createElement(Text, { color: theme.TEXT_MUTED }, ' : '),
         React.createElement(Text, { color: theme.INFO }, repo.branch)
       ),
       React.createElement(
         Box,
         null,
-        React.createElement(Text, { color: theme.TEXT_MUTED }, 'PR     : '),
-        React.createElement(StatusBadge, { state }),
-        pullRequest ? React.createElement(Text, { color: theme.INFO }, ` — ${pullRequest.html_url}`) : null
+        React.createElement(
+          Box,
+          { width: 10 },
+          React.createElement(Text, { color: theme.TEXT_MUTED }, 'PR')
+        ),
+        React.createElement(Text, { color: theme.TEXT_MUTED }, ' : '),
+        renderStatus(state, pullRequest)
       )
     ));
   } catch (error) {
@@ -40,6 +48,37 @@ async function statusCommand(_args, context) {
   } finally {
     setMode('idle');
   }
+}
+
+function renderStatus(state, pullRequest) {
+  if (state === 'open' && pullRequest) {
+    return React.createElement(
+      React.Fragment,
+      null,
+      React.createElement(Text, { color: theme.SUCCESS }, '✔ Open — '),
+      React.createElement(Text, { color: theme.INFO }, pullRequest.html_url)
+    );
+  }
+
+  if (state === 'merged' && pullRequest) {
+    return React.createElement(
+      React.Fragment,
+      null,
+      React.createElement(Text, { color: theme.PRIMARY }, '⬡ Merged — '),
+      React.createElement(Text, { color: theme.INFO }, pullRequest.html_url)
+    );
+  }
+
+  if (state === 'closed' && pullRequest) {
+    return React.createElement(
+      React.Fragment,
+      null,
+      React.createElement(Text, { color: theme.ERROR }, '✖ Closed — '),
+      React.createElement(Text, { color: theme.INFO }, pullRequest.html_url)
+    );
+  }
+
+  return React.createElement(Text, { color: theme.TEXT_MUTED }, 'No PR');
 }
 
 module.exports = statusCommand;

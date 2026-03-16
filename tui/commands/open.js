@@ -40,9 +40,40 @@ async function openCommand(_args, context) {
       push(React.createElement(
         Box,
         { flexDirection: 'column' },
-        React.createElement(Text, { color: theme.SUCCESS, bold: true }, `✔ PR already exists: #${existing.number}`),
-        React.createElement(Text, { color: theme.TEXT_PRIMARY }, existing.title),
-        React.createElement(Text, { color: theme.INFO }, existing.html_url)
+        React.createElement(Text, { color: theme.SUCCESS, bold: true }, '✔ PR Already Exists'),
+        React.createElement(
+          Box,
+          { marginTop: 1 },
+          React.createElement(
+            Box,
+            { width: 14 },
+            React.createElement(Text, { color: theme.TEXT_MUTED }, 'PR')
+          ),
+          React.createElement(Text, { color: theme.TEXT_MUTED }, ' : '),
+          React.createElement(Text, { color: theme.TEXT_PRIMARY }, `#${existing.number} — ${existing.title}`)
+        ),
+        React.createElement(
+          Box,
+          null,
+          React.createElement(
+            Box,
+            { width: 14 },
+            React.createElement(Text, { color: theme.TEXT_MUTED }, 'URL')
+          ),
+          React.createElement(Text, { color: theme.TEXT_MUTED }, ' : '),
+          React.createElement(Text, { color: theme.INFO }, existing.html_url)
+        ),
+        React.createElement(
+          Box,
+          { marginTop: 1 },
+          React.createElement(
+            Text,
+            { color: theme.TEXT_DIM },
+            'Press ',
+            React.createElement(Text, { color: theme.WARNING }, 'q'),
+            ' to continue'
+          )
+        )
       ));
       setMode('idle');
       return;
