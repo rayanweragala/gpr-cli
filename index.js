@@ -11,6 +11,11 @@ const diffCommand = require('./commands/diff');
 const reviewCommand = require('./commands/review');
 const checkoutCommand = require('./commands/checkout');
 const mergeCommand = require('./commands/merge');
+const conflictsCommand = require('./commands/conflicts');
+const resolveCommand = require('./commands/resolve');
+const closeCommand = require('./commands/close');
+const reopenCommand = require('./commands/reopen');
+const syncCommand = require('./commands/sync');
 const mineCommand = require('./commands/mine');
 const watchCommand = require('./commands/watch');
 const staleCommand = require('./commands/stale');
@@ -62,6 +67,31 @@ program
   .command('merge [pr-number]')
   .description('Merge an open pull request')
   .action(run(mergeCommand));
+
+program
+  .command('conflicts')
+  .description('Scan open pull requests for merge conflicts')
+  .action(run(conflictsCommand));
+
+program
+  .command('resolve <pr-number>')
+  .description('Fix merge conflicts for a PR')
+  .action(run(resolveCommand));
+
+program
+  .command('close [pr-number]')
+  .description('Close a pull request')
+  .action(run(closeCommand));
+
+program
+  .command('reopen <pr-number>')
+  .description('Reopen a closed pull request')
+  .action(run(reopenCommand));
+
+program
+  .command('sync')
+  .description('Sync current branch with base')
+  .action(run(syncCommand));
 
 program
   .command('mine')

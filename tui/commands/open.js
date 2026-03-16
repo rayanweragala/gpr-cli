@@ -58,14 +58,17 @@ async function openCommand(_args, context) {
         setMode('loading');
 
         try {
-          const pr = await createPullRequest(api, repo.owner, repo.repo, {
+          const created = await createPullRequest(api, repo.owner, repo.repo, {
             title: formData.title,
             body: formData.body,
             head: formData.head,
             base: formData.base
           });
+          const pr = created && created.number
+            ? created
+            : await findPullRequestByBranch(api, repo.owner, repo.repo, formData.head).catch(() => created);
 
-          if (formData.assignees && formData.assignees.length) {
+          if (pr && pr.number && formData.assignees && formData.assignees.length) {
             await addAssignees(api, repo.owner, repo.repo, pr.number, formData.assignees).catch(() => null);
           }
 
@@ -73,11 +76,11 @@ async function openCommand(_args, context) {
             Box,
             { flexDirection: 'column', marginY: 1 },
             React.createElement(Text, { color: theme.SUCCESS, bold: true }, '✔ Pull Request Created!'),
-            detailLine('PR', `#${pr.number}`, theme.SECONDARY, 10),
-            detailLine('Title', pr.title, theme.TEXT_PRIMARY, 10),
+            detailLine('PR', pr && pr.number ? `#${pr.number}` : '(created)', theme.SECONDARY, 10),
+            detailLine('Title', pr && pr.title ? pr.title : formData.title, theme.TEXT_PRIMARY, 10),
             detailLine('From', `${formData.head} → ${formData.base}`, theme.INFO, 10),
             detailLine('Assignee', formData.assignees && formData.assignees.length ? formData.assignees.join(', ') : 'none', theme.WARNING, 10),
-            detailLine('URL', pr.html_url, theme.INFO, 10)
+            detailLine('URL', pr && pr.html_url ? pr.html_url : '(not returned by server)', theme.INFO, 10)
           ));
         } catch (error) {
           push(React.createElement(Text, { color: theme.ERROR }, `✖ ${formatApiError(error).message}`));
