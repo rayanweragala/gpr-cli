@@ -1,16 +1,13 @@
 const React = require('react');
 const { Box, Text } = require('ink');
-const { execFile } = require('child_process');
-const { promisify } = require('util');
 const {
   buildApi,
   findPullRequestByBranch,
   listBranches,
   formatApiError
 } = require('../../lib/api');
+const { createGitRunner, formatCommandError } = require('./gitTransport');
 const theme = require('../theme');
-
-const execFileAsync = promisify(execFile);
 
 async function syncCommand(_args, context) {
   const { config, repo, push, setMode } = context;
@@ -18,6 +15,7 @@ async function syncCommand(_args, context) {
 
   try {
     const api = buildApi(config);
+    const runGitSafe = await createGitRunner(config);
     let baseBranch = 'main';
 
     try {
@@ -99,29 +97,6 @@ async function syncCommand(_args, context) {
   } finally {
     setMode('idle');
   }
-}
-
-async function runGitSafe(args) {
-  return execFileAsync('git', args, {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-    env: {
-      ...process.env,
-      GIT_TERMINAL_PROMPT: '0'
-    }
-  });
-}
-
-function formatCommandError(error) {
-  const stderr = String(error && error.stderr ? error.stderr : '').trim();
-  const stdout = String(error && error.stdout ? error.stdout : '').trim();
-  const message = stderr || stdout || (error && error.message) || '';
-
-  if (message) {
-    return message;
-  }
-
-  return formatApiError(error).message;
 }
 
 module.exports = syncCommand;

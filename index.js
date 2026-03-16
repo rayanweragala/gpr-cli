@@ -9,6 +9,7 @@ const statusCommand = require('./commands/status');
 const configCommand = require('./commands/config');
 const diffCommand = require('./commands/diff');
 const reviewCommand = require('./commands/review');
+const reviewConflictsCommand = require('./commands/review-conflicts');
 const checkoutCommand = require('./commands/checkout');
 const mergeCommand = require('./commands/merge');
 const conflictsCommand = require('./commands/conflicts');
@@ -57,6 +58,11 @@ program
   .command('review [pr-number]')
   .description('Show detailed pull request information')
   .action(run(reviewCommand));
+
+program
+  .command('review-conflicts [pr-number] [file]')
+  .description('Inspect rebase conflicts for a pull request')
+  .action(run(reviewConflictsCommand));
 
 program
   .command('checkout')

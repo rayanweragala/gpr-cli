@@ -136,6 +136,82 @@ gpr merge
 gpr merge 24
 ```
 
+### `gpr conflicts`
+
+Scans open pull requests for merge conflicts in the current repository.
+
+Example:
+
+```bash
+gpr conflicts
+```
+
+### `gpr resolve <pr-number>`
+
+Attempts to resolve a conflicted PR by fetching, checking out the PR head branch, rebasing onto the base branch, and pushing the result.
+
+Example:
+
+```bash
+gpr resolve 24
+```
+
+Behavior:
+
+- uses non-interactive git auth derived from your configured API identity
+- respects the configured proxy URL for git network operations
+- temporarily stashes local changes before switching branches
+- restores your local changes after success or abort
+- prints conflicted files if manual resolution is still required
+
+### `gpr review-conflicts [pr-number] [file]`
+
+Inspects rebase conflicts in a temporary git worktree so your current checkout stays untouched.
+
+Examples:
+
+```bash
+gpr review-conflicts 24
+gpr review-conflicts 24 pom.xml
+```
+
+Behavior:
+
+- simulates rebasing the PR head onto the base branch in a temp worktree
+- shows a summary for large conflict sets
+- supports focused preview for a specific file
+
+### `gpr close [pr-number]`
+
+Closes a pull request without merging.
+
+Examples:
+
+```bash
+gpr close
+gpr close 24
+```
+
+### `gpr reopen <pr-number>`
+
+Reopens a closed pull request.
+
+Example:
+
+```bash
+gpr reopen 24
+```
+
+### `gpr sync`
+
+Rebases the current branch onto its PR base branch, or a detected default branch, and pushes the updated branch.
+
+Example:
+
+```bash
+gpr sync
+```
+
 ### `gpr mine`
 
 Shows your open pull requests across all org repos available to your account.

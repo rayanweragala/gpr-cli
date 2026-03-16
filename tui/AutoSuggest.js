@@ -8,6 +8,7 @@ const COMMANDS = [
   { cmd: '/status', desc: 'PR status for current branch' },
   { cmd: '/diff', desc: 'Show branch diff summary' },
   { cmd: '/review', desc: 'Review a PR  e.g. /review 24' },
+  { cmd: '/review-conflicts', desc: 'Inspect conflicts  e.g. /review-conflicts 24 pom.xml' },
   { cmd: '/checkout', desc: 'Checkout a PR branch' },
   { cmd: '/resolve', desc: 'Fix PR conflicts  e.g. /resolve 24' },
   { cmd: '/merge', desc: 'Merge a PR  e.g. /merge 24' },
