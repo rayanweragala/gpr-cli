@@ -6,6 +6,7 @@ const COMMANDS = [
   { cmd: '/list', desc: 'List open pull requests' },
   { cmd: '/open', desc: 'Create a pull request' },
   { cmd: '/status', desc: 'PR status for current branch' },
+  { cmd: '/dashboard', desc: 'Split view dashboard with key actions' },
   { cmd: '/diff', desc: 'Show branch diff summary' },
   { cmd: '/review', desc: 'Review a PR  e.g. /review 24' },
   { cmd: '/review-conflicts', desc: 'Inspect conflicts  e.g. /review-conflicts 24 pom.xml' },

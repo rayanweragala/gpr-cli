@@ -42,7 +42,9 @@ async function openCommand(_args, context) {
         React.createElement(Text, { color: theme.SUCCESS, bold: true }, '✔ PR Already Exists'),
         detailLine('PR', `#${existing.number}`, theme.SECONDARY, 10),
         detailLine('Title', existing.title, theme.TEXT_PRIMARY, 10),
-        detailLine('URL', existing.html_url, theme.INFO, 10)
+        detailLine('URL', existing.html_url, theme.INFO, 10),
+        React.createElement(Text, { color: theme.TEXT_MUTED }, `Use /review ${existing.number} to inspect or /close ${existing.number} to create a new PR from this branch later.`),
+        React.createElement(Text, { color: theme.TEXT_DIM }, 'To open a second PR now, push changes to a different branch and run /open there.')
       ));
       setMode('idle');
       return;

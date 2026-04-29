@@ -5,8 +5,15 @@ const { buildApi, listOpenPullRequests, formatApiError } = require('../../lib/ap
 const { fetchOrigin, branchExistsLocally, checkoutBranch } = require('../../lib/git');
 const theme = require('../theme');
 
-async function checkoutCommand(_args, context) {
+async function checkoutCommand(args, context) {
   const { config, repo, push, setMode, setActiveForm } = context;
+  const prNumber = args[0] ? Number(args[0]) : null;
+
+  if (args[0] && Number.isNaN(prNumber)) {
+    push(React.createElement(Text, { color: theme.ERROR }, '✖ Usage: /checkout [pr-number]'));
+    return;
+  }
+
   setMode('loading');
 
   try {
@@ -16,6 +23,33 @@ async function checkoutCommand(_args, context) {
     if (!pullRequests.length) {
       push(React.createElement(Text, { color: theme.WARNING }, 'No open pull requests found.'));
       setMode('idle');
+      return;
+    }
+
+    if (prNumber) {
+      const pullRequest = pullRequests.find((item) => Number(item.number) === prNumber);
+
+      if (!pullRequest) {
+        push(React.createElement(Text, { color: theme.ERROR }, `✖ PR #${prNumber} was not found in open pull requests.`));
+        setMode('idle');
+        return;
+      }
+
+      try {
+        await fetchOrigin();
+        const exists = await branchExistsLocally(pullRequest.head.ref);
+        await checkoutBranch(pullRequest.head.ref, exists);
+        push(React.createElement(
+          Box,
+          { flexDirection: 'column' },
+          React.createElement(Text, { color: theme.SUCCESS, bold: true }, `✔ Switched to branch: ${pullRequest.head.ref}`),
+          React.createElement(Text, { color: theme.TEXT_MUTED }, 'Tip: Run "gpr status" to see PR details')
+        ));
+      } catch (error) {
+        push(React.createElement(Text, { color: theme.ERROR }, `✖ ${error.message || 'Failed to checkout branch'}`));
+      } finally {
+        setMode('idle');
+      }
       return;
     }
 

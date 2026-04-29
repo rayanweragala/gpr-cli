@@ -8,7 +8,7 @@ async function helpCommand(_args, context) {
   const sections = [
     {
       title: 'Core',
-      commands: ['/list', '/open', '/status', '/diff', '/review', '/review-conflicts', '/checkout']
+      commands: ['/list', '/open', '/status', '/dashboard', '/diff', '/review', '/review-conflicts', '/checkout']
     },
     {
       title: 'PR Lifecycle',

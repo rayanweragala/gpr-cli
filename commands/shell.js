@@ -10,7 +10,13 @@ async function shellCommand() {
     tryGetRepo()
   ]);
 
-  return renderShell({ config, repo });
+  return renderShell({
+    config,
+    repo,
+    initialCommand: repo ? '/lg' : '',
+    initialCommandSilent: true,
+    showWelcome: !repo
+  });
 }
 
 async function renderShell(options) {
@@ -18,6 +24,7 @@ async function renderShell(options) {
     config: options.config || null,
     repo: options.repo || null,
     initialCommand: options.initialCommand || '',
+    initialCommandSilent: Boolean(options.initialCommandSilent),
     autoExit: Boolean(options.autoExit),
     showWelcome: options.showWelcome !== false
   }));

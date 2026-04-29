@@ -13,6 +13,8 @@ const COMMAND_MAP = {
   list: require('./commands/list'),
   open: require('./commands/open'),
   status: require('./commands/status'),
+  dashboard: require('./commands/dashboard'),
+  lg: require('./commands/lg'),
   diff: require('./commands/diff'),
   review: require('./commands/review'),
   'review-conflicts': require('./commands/review-conflicts'),
@@ -39,6 +41,8 @@ const REQUIREMENTS = {
   list: { config: true, repo: true },
   open: { config: true, repo: true },
   status: { config: true, repo: true },
+  dashboard: { config: true, repo: true },
+  lg: { config: true, repo: true },
   diff: { config: true, repo: true },
   review: { config: true, repo: true },
   'review-conflicts': { config: true, repo: true },
@@ -141,7 +145,10 @@ function App(props) {
     }
 
     initialRun.current = true;
-    handleSubmit(props.initialCommand).finally(() => setInitialDone(true));
+    const runInitial = props.initialCommandSilent
+      ? executeCommand(props.initialCommand)
+      : handleSubmit(props.initialCommand);
+    runInitial.finally(() => setInitialDone(true));
   });
 
   React.useEffect(() => {
